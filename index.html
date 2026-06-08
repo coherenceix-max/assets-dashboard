@@ -1,0 +1,960 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>부동산 갈아타기 플랜</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d2e;
+    --surface2: #242740;
+    --border: #2e3250;
+    --accent: #6c8ef5;
+    --accent2: #52d9a0;
+    --accent3: #f5a623;
+    --danger: #f56c6c;
+    --purple: #c084fc;
+    --text: #e8eaf6;
+    --text2: #8890b5;
+    --text3: #5c6385;
+    --radius: 12px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif; min-height: 100vh; }
+  .page { max-width: 1120px; margin: 0 auto; padding: 28px 20px 60px; }
+
+  /* Header */
+  .header { margin-bottom: 28px; }
+  .header h1 { font-size: 22px; font-weight: 700; }
+  .header h1 span { color: var(--accent); }
+  .header p { color: var(--text2); font-size: 13px; margin-top: 5px; }
+  .badge { display: inline-block; background: var(--surface2); border: 1px solid var(--border); border-radius: 20px; padding: 3px 10px; font-size: 11px; color: var(--text2); margin-right: 6px; margin-top: 8px; }
+  .badge.live { border-color: var(--accent2); color: var(--accent2); }
+
+  /* Cards */
+  .cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
+  @media(max-width:720px){ .cards { grid-template-columns: repeat(2,1fr); } }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 18px; }
+  .card-label { font-size: 11px; color: var(--text2); letter-spacing: 0.5px; margin-bottom: 6px; }
+  .card-value { font-size: 22px; font-weight: 700; }
+  .card-sub { font-size: 11px; color: var(--text3); margin-top: 3px; }
+  .c-accent { color: var(--accent); }
+  .c-green  { color: var(--accent2); }
+  .c-orange { color: var(--accent3); }
+  .c-red    { color: var(--danger); }
+  .c-purple { color: var(--purple); }
+  .bd-accent { border-color: var(--accent); }
+  .bd-green  { border-color: var(--accent2); }
+  .bd-orange { border-color: var(--accent3); }
+  .bd-red    { border-color: var(--danger); }
+
+  /* Sliders */
+  .controls { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px 22px; margin-bottom: 20px; }
+  .controls-title { font-size: 13px; font-weight: 600; color: var(--text2); margin-bottom: 14px; }
+  .slider-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  @media(max-width:720px){ .slider-grid { grid-template-columns: 1fr 1fr; } }
+  .slider-item label { font-size: 12px; color: var(--text2); display: flex; justify-content: space-between; margin-bottom: 5px; }
+  .slider-item label span { color: var(--accent); font-weight: 600; }
+  input[type=range] { width: 100%; accent-color: var(--accent); cursor: pointer; }
+
+  /* Two col */
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+  @media(max-width:720px){ .two-col { grid-template-columns: 1fr; } }
+
+  /* Panel */
+  .panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; }
+  .panel-title { font-size: 13px; font-weight: 600; color: var(--text2); margin-bottom: 16px; letter-spacing: 0.3px; }
+  .full-panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 20px; }
+  .full-panel .panel-title { font-size: 13px; font-weight: 600; color: var(--text2); margin-bottom: 16px; }
+
+  /* Timeline */
+  .timeline { position: relative; padding-left: 18px; }
+  .timeline::before { content:''; position:absolute; left:6px; top:0; bottom:0; width:2px; background:var(--border); }
+  .tl-item { position:relative; margin-bottom:18px; }
+  .tl-dot { position:absolute; left:-18px; width:12px; height:12px; border-radius:50%; border:2px solid var(--border); background:var(--bg); top:3px; }
+  .tl-dot.now    { background:var(--accent);  border-color:var(--accent);  box-shadow:0 0 8px var(--accent); }
+  .tl-dot.mid    { background:var(--accent3); border-color:var(--accent3); box-shadow:0 0 8px var(--accent3); }
+  .tl-dot.target { background:var(--accent2); border-color:var(--accent2); box-shadow:0 0 8px var(--accent2); }
+  .tl-date  { font-size:11px; color:var(--text3); }
+  .tl-title { font-size:13px; font-weight:600; margin:2px 0; }
+  .tl-desc  { font-size:12px; color:var(--text2); line-height:1.5; }
+  .tl-num   { font-size:12px; color:var(--accent); font-weight:600; margin-top:4px; }
+
+  /* Fund breakdown bars */
+  .fund-row { display:flex; align-items:center; gap:10px; margin-bottom:10px; }
+  .fund-label { font-size:12px; color:var(--text2); width:130px; flex-shrink:0; }
+  .fund-track { flex:1; background:var(--surface2); border-radius:5px; height:20px; overflow:hidden; position:relative; }
+  .fund-fill  { height:100%; border-radius:5px; display:flex; align-items:center; justify-content:flex-end; padding-right:8px; font-size:11px; font-weight:600; color:#fff; transition:width 0.4s ease; white-space:nowrap; }
+  .fund-note  { font-size:11px; width:72px; flex-shrink:0; text-align:right; }
+
+  /* Chart */
+  .chart-wrap { position:relative; height:230px; }
+
+  /* Property tracker */
+  .tracker-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
+  .tracker-tabs { display:flex; gap:6px; }
+  .tab { padding:4px 12px; border-radius:20px; font-size:12px; cursor:pointer; border:1px solid var(--border); color:var(--text2); background:transparent; transition:all 0.2s; }
+  .tab.active { background:var(--accent); border-color:var(--accent); color:#fff; font-weight:600; }
+  .add-btn { font-size:12px; color:var(--accent); cursor:pointer; padding:4px 10px; border:1px solid var(--accent); border-radius:6px; background:transparent; }
+  .add-btn:hover { background:rgba(108,142,245,0.1); }
+
+  /* Property cards grid */
+  .prop-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; }
+  @media(max-width:900px){ .prop-grid { grid-template-columns:1fr 1fr; } }
+  @media(max-width:600px){ .prop-grid { grid-template-columns:1fr; } }
+  .prop-card { background:var(--surface2); border:1px solid var(--border); border-radius:10px; padding:14px; cursor:pointer; transition:border-color 0.2s; position:relative; }
+  .prop-card:hover { border-color: var(--accent); }
+  .prop-card.watching { border-color: var(--accent2); }
+  .prop-card.watching::after { content:'👀 주시중'; position:absolute; top:10px; right:10px; font-size:10px; background:rgba(82,217,160,0.15); color:var(--accent2); padding:2px 7px; border-radius:4px; }
+  .prop-name { font-size:13px; font-weight:700; margin-bottom:4px; }
+  .prop-meta { font-size:11px; color:var(--text3); margin-bottom:8px; }
+  .prop-price { font-size:17px; font-weight:700; margin-bottom:4px; }
+  .prop-gap-info { font-size:11px; color:var(--text2); }
+  .prop-tags { display:flex; gap:5px; flex-wrap:wrap; margin-top:8px; }
+  .ptag { font-size:10px; padding:2px 7px; border-radius:4px; }
+  .ptag-new  { background:rgba(108,142,245,0.15); color:var(--accent); }
+  .ptag-old  { background:rgba(245,166,35,0.15);  color:var(--accent3); }
+  .ptag-reno { background:rgba(192,132,252,0.15); color:var(--purple); }
+  .ptag-ok   { background:rgba(82,217,160,0.15);  color:var(--accent2); }
+  .ptag-tight{ background:rgba(245,108,108,0.15); color:var(--danger); }
+
+  /* Add form */
+  .add-form { background:var(--surface2); border:1px dashed var(--border); border-radius:10px; padding:14px; display:none; margin-bottom:12px; }
+  .add-form.show { display:block; }
+  .form-row { display:grid; grid-template-columns:2fr 1fr 1fr 1fr; gap:8px; align-items:end; }
+  @media(max-width:720px){ .form-row { grid-template-columns:1fr 1fr; } }
+  .form-group { display:flex; flex-direction:column; gap:4px; }
+  .form-group label { font-size:11px; color:var(--text3); }
+  .form-group input, .form-group select { background:var(--surface); border:1px solid var(--border); border-radius:6px; padding:6px 10px; color:var(--text); font-size:12px; outline:none; }
+  .form-group input:focus, .form-group select:focus { border-color:var(--accent); }
+  .form-submit { padding:7px 16px; background:var(--accent); color:#fff; border:none; border-radius:6px; font-size:12px; cursor:pointer; font-weight:600; }
+
+  /* Note */
+  .note { background:rgba(108,142,245,0.08); border:1px solid rgba(108,142,245,0.2); border-radius:8px; padding:12px 16px; font-size:12px; color:var(--text2); line-height:1.6; margin-top:16px; }
+  .note strong { color:var(--accent); }
+
+  /* Donut legend */
+  .rl-item { display:flex; align-items:center; gap:8px; margin-bottom:8px; font-size:12px; }
+  .rl-dot  { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+
+  /* Util */
+  .section-gap { margin-bottom:20px; }
+  .divider { border:none; border-top:1px solid var(--border); margin:16px 0; }
+
+  /* Memo section */
+  .memo-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
+  .memo-cat-tabs { display:flex; gap:6px; flex-wrap:wrap; }
+  .memo-cat-tab { padding:4px 12px; border-radius:20px; font-size:12px; cursor:pointer; border:1px solid var(--border); color:var(--text2); background:transparent; transition:all 0.2s; }
+  .memo-cat-tab.active { color:#fff; font-weight:600; }
+  .memo-cat-tab[data-cat="재건축"].active  { background:#c084fc; border-color:#c084fc; }
+  .memo-cat-tab[data-cat="분양"].active    { background:#f5a623; border-color:#f5a623; }
+  .memo-cat-tab[data-cat="입주예정"].active{ background:#52d9a0; border-color:#52d9a0; color:#0f1117; }
+  .memo-cat-tab[data-cat="기타"].active    { background:#8890b5; border-color:#8890b5; }
+  .memo-cat-tab[data-cat="all"].active     { background:#6c8ef5; border-color:#6c8ef5; }
+
+  .memo-add-form { background:var(--surface2); border:1px dashed var(--border); border-radius:10px; padding:14px; display:none; margin-bottom:14px; }
+  .memo-add-form.show { display:block; }
+  .memo-form-row { display:grid; grid-template-columns:2fr 1fr 1fr auto; gap:8px; align-items:end; }
+  @media(max-width:720px){ .memo-form-row { grid-template-columns:1fr 1fr; } }
+  .memo-form-row2 { display:grid; grid-template-columns:1fr auto; gap:8px; align-items:end; margin-top:8px; }
+  .fg label { font-size:11px; color:var(--text3); display:block; margin-bottom:4px; }
+  .fg input, .fg select, .fg textarea {
+    background:var(--surface); border:1px solid var(--border); border-radius:6px;
+    padding:7px 10px; color:var(--text); font-size:12px; outline:none; width:100%;
+    font-family:inherit;
+  }
+  .fg input:focus, .fg select:focus, .fg textarea:focus { border-color:var(--accent); }
+  .fg textarea { resize:vertical; min-height:60px; }
+  .memo-submit { padding:7px 16px; background:var(--accent); color:#fff; border:none; border-radius:6px; font-size:12px; cursor:pointer; font-weight:600; white-space:nowrap; }
+
+  /* Memo cards */
+  .memo-grid { display:flex; flex-direction:column; gap:10px; }
+  .memo-card { background:var(--surface2); border:1px solid var(--border); border-radius:10px; padding:14px 16px; position:relative; }
+  .memo-card:hover .memo-del { opacity:1; }
+  .memo-del { position:absolute; top:10px; right:12px; background:none; border:none; color:var(--text3); cursor:pointer; font-size:16px; opacity:0; transition:opacity 0.2s; }
+  .memo-del:hover { color:var(--danger); }
+  .memo-top { display:flex; align-items:center; gap:10px; margin-bottom:6px; flex-wrap:wrap; }
+  .memo-title { font-size:13px; font-weight:700; }
+  .memo-cat-badge { font-size:10px; padding:2px 8px; border-radius:4px; font-weight:600; }
+  .mc-재건축  { background:rgba(192,132,252,0.15); color:#c084fc; }
+  .mc-분양    { background:rgba(245,166,35,0.15);  color:#f5a623; }
+  .mc-입주예정{ background:rgba(82,217,160,0.15);  color:#52d9a0; }
+  .mc-기타    { background:rgba(136,144,181,0.15); color:#8890b5; }
+  .memo-region-badge { font-size:10px; padding:2px 8px; border-radius:4px; }
+  .mr-gwacheon { background:rgba(108,142,245,0.15); color:var(--accent); }
+  .mr-bangbae  { background:rgba(192,132,252,0.15); color:var(--purple); }
+  .mr-both     { background:rgba(82,217,160,0.15);  color:var(--accent2); }
+  .memo-date { font-size:11px; color:var(--text3); margin-left:auto; }
+  .memo-body { font-size:12px; color:var(--text2); line-height:1.65; white-space:pre-wrap; }
+  .memo-timeline-tag { font-size:11px; color:var(--accent3); margin-top:6px; font-weight:600; }
+  .memo-empty { color:var(--text3); font-size:13px; padding:24px; text-align:center; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- Header -->
+  <div class="header">
+    <h1>🏠 갈아타기 플랜 <span>— 평촌 → 과천 / 방배</span></h1>
+    <p>기준: 2026년 6월 &nbsp;|&nbsp; 목표 시점: 2029년 9월 (비과세 매각 후)</p>
+    <span class="badge">📍 평촌센텀퍼스트 25평 B타입</span>
+    <span class="badge">🎯 목표 15~20억</span>
+    <span class="badge live">⏱ 잔여 40개월</span>
+  </div>
+
+  <!-- Summary cards (live) -->
+  <div class="cards">
+    <div class="card bd-accent">
+      <div class="card-label">실투자금 (갭)</div>
+      <div class="card-value c-accent" id="c-gap">4.0억</div>
+      <div class="card-sub">매매가 9.5억 – 전세 5.5억</div>
+    </div>
+    <div class="card bd-green">
+      <div class="card-label">29년 9월 총 가용자금</div>
+      <div class="card-value c-green" id="c-total">—</div>
+      <div class="card-sub">갭회수 + 현금 + 40개월 저축</div>
+    </div>
+    <div class="card bd-orange">
+      <div class="card-label">목표 최소 필요자금</div>
+      <div class="card-value c-orange" id="c-minneed">—</div>
+      <div class="card-sub">15억 갭투자 기준 (전세 55%)</div>
+    </div>
+    <div class="card bd-red">
+      <div class="card-label">현재 자금 부족액</div>
+      <div class="card-value c-red" id="c-shortage">—</div>
+      <div class="card-sub">추가 월저축 필요: <span id="c-extra-save">—</span></div>
+    </div>
+  </div>
+
+  <!-- Sliders (핵심 4개만) -->
+  <div class="controls">
+    <div class="controls-title">⚙️ 내가 컨트롤할 수 있는 변수</div>
+    <div class="slider-grid">
+      <div class="slider-item">
+        <label>평촌 현재 시세 <span id="lv-price">9.5억</span></label>
+        <input type="range" id="s-price" min="7" max="14" step="0.5" value="9.5">
+      </div>
+      <div class="slider-item">
+        <label>전세보증금 <span id="lv-jeonse">5.5억</span></label>
+        <input type="range" id="s-jeonse" min="4" max="8" step="0.5" value="5.5">
+      </div>
+      <div class="slider-item">
+        <label>보유 현금 <span id="lv-cash">1.0억</span></label>
+        <input type="range" id="s-cash" min="0" max="5" step="0.5" value="1">
+      </div>
+      <div class="slider-item">
+        <label>월 저축액 <span id="lv-save">300만원</span></label>
+        <input type="range" id="s-save" min="100" max="800" step="50" value="300">
+      </div>
+      <div class="slider-item">
+        <label>평촌 <u>예상 매각가</u> (29년 9월) <span id="lv-sale">11.5억</span></label>
+        <input type="range" id="s-sale" min="8" max="16" step="0.5" value="11.5">
+      </div>
+      <div class="slider-item">
+        <label>목표 물건 <u>예상 매입가</u> <span id="lv-target">19억</span></label>
+        <input type="range" id="s-target" min="14" max="25" step="0.5" value="19">
+      </div>
+    </div>
+    <div style="margin-top:12px; font-size:11px; color:var(--text3);">
+      💡 예상 매각가는 매각 시점에 1회 갱신 — 현재 호가 기준으로 보수적/적극적 시나리오를 직접 설정하세요.
+    </div>
+  </div>
+
+  <!-- Timeline + Fund Breakdown -->
+  <div class="two-col section-gap">
+    <div class="panel">
+      <div class="panel-title">📅 갈아타기 타임라인</div>
+      <div class="timeline">
+        <div class="tl-item">
+          <div class="tl-dot now"></div>
+          <div class="tl-date">2026년 6월 (현재)</div>
+          <div class="tl-title">갭투자 보유 중 · 저축 시작</div>
+          <div class="tl-desc">임차인 거주 중<br>매달 저축으로 실탄 마련</div>
+          <div class="tl-num" id="tl-now">갭 4.0억 · 현금 1.0억</div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-dot mid"></div>
+          <div class="tl-date">2027년 9월 (D-16개월)</div>
+          <div class="tl-title">전세 만기 → 직접 입주</div>
+          <div class="tl-desc">16개월 저축 완료<br>일시적 2주택 매입 검토 시점</div>
+          <div class="tl-num" id="tl-move">누적 저축 —</div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-dot target"></div>
+          <div class="tl-date">2029년 9월 (D-40개월)</div>
+          <div class="tl-title">2년 거주 완료 → 비과세 매각</div>
+          <div class="tl-desc">양도세 0 · 갈아타기 실행</div>
+          <div class="tl-num" id="tl-target">총 가용자금 —</div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-dot"></div>
+          <div class="tl-date">2029년 10월~</div>
+          <div class="tl-title">과천 or 방배 입성 🎉</div>
+          <div class="tl-desc">아래 트래킹 중인 매물 중 선택</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title">💰 2029년 9월 가용자금 구성</div>
+      <div style="margin-bottom:16px;">
+        <div class="chart-wrap" style="height:180px;">
+          <canvas id="donutChart"></canvas>
+        </div>
+        <div id="donut-legend" style="margin-top:10px;"></div>
+      </div>
+      <hr class="divider">
+      <div class="panel-title" style="margin-bottom:10px;">목표별 자금 여유/부족</div>
+      <div id="fund-bars"></div>
+    </div>
+  </div>
+
+  <!-- Savings chart -->
+  <div class="full-panel section-gap">
+    <div class="panel-title">📈 월별 누적 현금 흐름 (2026.6 → 2029.9)</div>
+    <div class="chart-wrap" style="height:220px;">
+      <canvas id="lineChart"></canvas>
+    </div>
+  </div>
+
+  <!-- Property Tracker -->
+  <div class="full-panel">
+    <div class="tracker-header">
+      <div class="panel-title" style="margin:0;">🏙️ 갈아타기 후보 매물 트래커</div>
+      <div style="display:flex; gap:8px; align-items:center;">
+        <div class="tracker-tabs">
+          <button class="tab active" onclick="filterProps('all',this)">전체</button>
+          <button class="tab" onclick="filterProps('gwacheon',this)">과천</button>
+          <button class="tab" onclick="filterProps('bangbae',this)">방배</button>
+          <button class="tab" onclick="filterProps('watching',this)">👀 주시중</button>
+        </div>
+        <button class="add-btn" onclick="toggleAddForm()">+ 매물 추가</button>
+      </div>
+    </div>
+
+    <!-- Add form -->
+    <div class="add-form" id="addForm">
+      <div class="form-row">
+        <div class="form-group">
+          <label>단지명</label>
+          <input type="text" id="f-name" placeholder="예: 과천자이 84㎡">
+        </div>
+        <div class="form-group">
+          <label>지역</label>
+          <select id="f-region">
+            <option value="gwacheon">과천</option>
+            <option value="bangbae">방배</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>호가 (억)</label>
+          <input type="number" id="f-price" placeholder="예: 16.5" step="0.5">
+        </div>
+        <div class="form-group">
+          <label>준공연도</label>
+          <input type="number" id="f-year" placeholder="예: 2022">
+        </div>
+      </div>
+      <div class="form-row" style="margin-top:8px;">
+        <div class="form-group">
+          <label>면적 / 메모</label>
+          <input type="text" id="f-memo" placeholder="예: 전용 84㎡, GTX 역세권">
+        </div>
+        <div class="form-group">
+          <label>전세가 (억, 선택)</label>
+          <input type="number" id="f-jeonse" placeholder="예: 9.0" step="0.5">
+        </div>
+        <div class="form-group">
+          <label>타입</label>
+          <select id="f-type">
+            <option value="신축">신축/준신축</option>
+            <option value="구축">구축</option>
+            <option value="재건축">재건축</option>
+          </select>
+        </div>
+        <div class="form-group" style="justify-content:flex-end;">
+          <button class="form-submit" onclick="addProp()">추가하기</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="prop-grid" id="propGrid"></div>
+
+    <div class="note" style="margin-top:16px;">
+      <strong>참고:</strong> 카드를 클릭하면 주시중 토글. 호가는 네이버부동산·호갱노노 기준으로 직접 업데이트하세요. 시세는 매각 시점(29년 9월)에 1회 확인으로 충분합니다.
+    </div>
+  </div>
+
+  <!-- 실거래가 히스토리 -->
+  <div class="full-panel">
+    <div class="tracker-header">
+      <div>
+        <div class="panel-title" style="margin:0 0 4px;">📉 실거래가 히스토리</div>
+        <div style="font-size:11px;color:var(--text3);">매월 15일 자동 수집 · 전용 84㎡ 기준 · <span id="history-count">0</span>회 누적</div>
+      </div>
+      <div style="display:flex;gap:6px;">
+        <button class="tab active" onclick="filterHistory('all',this)">전체</button>
+        <button class="tab" onclick="filterHistory('gwacheon',this)">과천</button>
+        <button class="tab" onclick="filterHistory('bangbae',this)">방배</button>
+      </div>
+    </div>
+
+    <!-- 차트 영역 -->
+    <div class="chart-wrap" style="height:240px;margin-bottom:20px;">
+      <canvas id="historyChart"></canvas>
+    </div>
+
+    <!-- 테이블 -->
+    <div style="overflow-x:auto;">
+      <table id="historyTable">
+        <thead>
+          <tr>
+            <th>기간</th>
+            <th>단지명</th>
+            <th>지역</th>
+            <th>면적</th>
+            <th>실거래가</th>
+            <th>비고</th>
+          </tr>
+        </thead>
+        <tbody id="historyTbody"></tbody>
+      </table>
+    </div>
+
+    <div class="note" style="margin-top:14px;">
+      <strong>수집 방식:</strong> 전월 15일~당월 14일 거래 기준. 거래가 없는 단지는 '-' 표시. 데이터 출처: 호갱노노·국토부 실거래가시스템.
+      미확인 데이터는 <a href="https://hogangnono.com" target="_blank" style="color:var(--accent);">호갱노노</a>에서 직접 확인 후 JSON 파일에 수동 입력 가능.
+    </div>
+  </div>
+
+  <!-- Memo / Schedule section -->
+  <div class="full-panel">
+    <div class="memo-header">
+      <div>
+        <div class="panel-title" style="margin:0 0 6px;">📋 개발 일정 & 메모</div>
+        <div style="font-size:11px; color:var(--text3);">재건축 진행 현황, 분양 예정, 입주 일정 등 매물로 담기 어려운 정보를 자유롭게 기록</div>
+      </div>
+      <div style="display:flex;gap:6px;">
+        <button class="add-btn" onclick="resetMemosToDefault()" style="border-color:var(--text3);color:var(--text3);" title="기본 예시 메모로 초기화">↺ 초기화</button>
+        <button class="add-btn" onclick="toggleMemoForm()">+ 메모 추가</button>
+      </div>
+    </div>
+
+    <!-- Category filter -->
+    <div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:14px;">
+      <button class="memo-cat-tab active" data-cat="all"     onclick="filterMemo('all',this)">전체</button>
+      <button class="memo-cat-tab"        data-cat="재건축"  onclick="filterMemo('재건축',this)">🔨 재건축</button>
+      <button class="memo-cat-tab"        data-cat="분양"    onclick="filterMemo('분양',this)">🏗️ 분양</button>
+      <button class="memo-cat-tab"        data-cat="입주예정" onclick="filterMemo('입주예정',this)">🔑 입주예정</button>
+      <button class="memo-cat-tab"        data-cat="기타"    onclick="filterMemo('기타',this)">📌 기타</button>
+    </div>
+
+    <!-- Add form -->
+    <div class="memo-add-form" id="memoForm">
+      <div class="memo-form-row">
+        <div class="fg"><label>제목 (단지명 또는 이슈)</label><input type="text" id="mf-title" placeholder="예: 방배5구역 재건축 조합설립인가"></div>
+        <div class="fg"><label>카테고리</label>
+          <select id="mf-cat">
+            <option value="재건축">🔨 재건축</option>
+            <option value="분양">🏗️ 분양</option>
+            <option value="입주예정">🔑 입주예정</option>
+            <option value="기타">📌 기타</option>
+          </select>
+        </div>
+        <div class="fg"><label>지역</label>
+          <select id="mf-region">
+            <option value="gwacheon">과천</option>
+            <option value="bangbae">방배</option>
+            <option value="both">공통</option>
+          </select>
+        </div>
+        <div class="fg"><label>예상 시점</label><input type="text" id="mf-when" placeholder="예: 2027년 하반기"></div>
+      </div>
+      <div class="memo-form-row2">
+        <div class="fg"><label>내용</label><textarea id="mf-body" placeholder="예: 조합설립인가 완료, 관리처분 진행 중. 예상 입주 2031년. 분양가 상한제 적용 여부 미정. 현 호가 대비 재건축 프리미엄 3~4억 추정."></textarea></div>
+        <button class="memo-submit" onclick="addMemo()">추가</button>
+      </div>
+    </div>
+
+    <!-- Memo list -->
+    <div class="memo-grid" id="memoGrid"></div>
+  </div>
+
+</div>
+
+<script>
+// ─── 초기 매물 데이터 ─────────────────────────────
+let properties = JSON.parse(localStorage.getItem('props') || 'null') || [
+  { id:1, name:'과천센트럴파크 푸르지오써밋', region:'gwacheon', price:17.5, year:2021, memo:'전용 84㎡ · 4호선 과천역 도보', jeonse:9.5, type:'신축', watching:false },
+  { id:2, name:'과천 자이',                   region:'gwacheon', price:16.8, year:2022, memo:'전용 84㎡ · 과천지식정보타운', jeonse:9.0, type:'신축', watching:false },
+  { id:3, name:'래미안 에코팰리스',            region:'gwacheon', price:15.5, year:2010, memo:'전용 84㎡ · 4호선 역세권', jeonse:8.5, type:'구축', watching:false },
+  { id:4, name:'과천 푸르지오 어울림',         region:'gwacheon', price:18.5, year:2023, memo:'전용 84㎡ · 신규 분양단지', jeonse:10.0, type:'신축', watching:false },
+  { id:5, name:'방배삼익 (재건축)',            region:'bangbae',  price:15.0, year:1985, memo:'전용 76㎡ · 7호선 방배역 인근', jeonse:7.0, type:'재건축', watching:false },
+  { id:6, name:'방배 현대홈타운',              region:'bangbae',  price:16.0, year:2002, memo:'전용 84㎡ · 서초구 생활권', jeonse:8.5, type:'구축', watching:false },
+  { id:7, name:'방배 아크로리버뷰',            region:'bangbae',  price:19.5, year:2016, memo:'전용 84㎡ · 한강뷰 준신축', jeonse:10.5, type:'신축', watching:false },
+  { id:8, name:'방배그랑자이',                  region:'bangbae',  price:null, year:2022, memo:'전용 72㎡ · 방배동 · 72㎡ 2월 26억 · 84㎡ 없음', jeonse:null, type:'신축', watching:false },
+  { id:9, name:'과천 위버필드',                region:'gwacheon', price:16.2, year:2019, memo:'전용 84㎡ · 지식정보타운', jeonse:8.8, type:'신축', watching:false },
+  { id:10, name:'방배 포레스트자이 (가칭)',     region:'bangbae',  price:20.0, year:2028, memo:'방배13구역 재건축 · 2,217세대 · 84㎡ 예상 19~22억 · 일반분양 547세대', jeonse:null, type:'신축', watching:false },
+  { id:11, name:'과천 프레스티어자이 (가칭)',   region:'gwacheon', price:null, year:2027, memo:'4단지 재건축 · 1,445세대 · 분양가 미확정', jeonse:null, type:'신축', watching:false },
+  { id:12, name:'과천 써밋마에스트로 (가칭)',   region:'gwacheon', price:null, year:2029, memo:'5단지 재건축 · 1,242세대 · 2029년 목표 (경계)', jeonse:null, type:'신축', watching:false },
+];
+let nextId = properties.length + 1;
+let currentFilter = 'all';
+
+function savePropStorage() {
+  localStorage.setItem('props', JSON.stringify(properties));
+}
+
+// ─── State ──────────────────────────────────────
+const S = { price: 9.5, jeonse: 5.5, cash: 1.0, save: 300, sale: 11.5, target: 19 };
+
+function compute() {
+  const TOTAL = 40; // 개월
+  const TO_MOVE = 16;
+  const netGap    = S.sale - S.jeonse - S.sale * 0.004; // 예상매각가 기준 갭회수 – 중개수수료
+  const saving    = S.save * TOTAL / 10000;
+  const total     = netGap + S.cash + saving;
+  // 목표: 실거주 매입 기준 대출 40% LTV
+  const minNeed   = S.target * 0.60 + S.target * 0.017; // 자기자금(60%)+취득세+중개
+  const shortage  = total - minNeed;
+  const extraSave = shortage < 0 ? Math.ceil(-shortage * 10000 / TOTAL) : 0;
+  return { netGap, saving, total, minNeed, shortage, extraSave, TO_MOVE };
+}
+
+// ─── Charts ─────────────────────────────────────
+let donut, line;
+
+function initCharts() {
+  donut = new Chart(document.getElementById('donutChart').getContext('2d'), {
+    type: 'doughnut',
+    data: { labels:[], datasets:[{ data:[], backgroundColor:[], borderWidth:0, hoverOffset:6 }] },
+    options: {
+      cutout:'65%',
+      plugins:{ legend:{display:false}, tooltip:{ callbacks:{ label: c => ` ${c.label}: ${c.raw.toFixed(2)}억` }} },
+      animation:{ duration:400 },
+    }
+  });
+  line = new Chart(document.getElementById('lineChart').getContext('2d'), {
+    type:'line', data:{ labels:[], datasets:[] },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      interaction:{ mode:'index', intersect:false },
+      plugins:{ legend:{ labels:{ color:'#8890b5', font:{size:11}, boxWidth:12 }},
+        tooltip:{ callbacks:{ label: c => ` ${c.dataset.label}: ${c.raw.toFixed(2)}억` }} },
+      scales:{
+        x:{ ticks:{ color:'#5c6385', maxTicksLimit:8, font:{size:10} }, grid:{color:'#1e2035'} },
+        y:{ ticks:{ color:'#5c6385', callback: v => v+'억', font:{size:10} }, grid:{color:'#1e2035'} }
+      },
+      animation:{ duration:300 },
+    }
+  });
+}
+
+function fmt(v) { return v.toFixed(1)+'억'; }
+
+// ─── Update ─────────────────────────────────────
+function update() {
+  const C = compute();
+
+  // Cards
+  const gap = S.price - S.jeonse;
+  document.getElementById('c-gap').textContent = fmt(gap);
+  document.getElementById('c-total').textContent = fmt(C.total);
+  document.getElementById('c-minneed').textContent = fmt(C.minNeed);
+  document.getElementById('c-minneed').closest('.card').querySelector('.card-sub').textContent = `${S.target}억 실거주+대출40% 기준`;
+  const sh = C.shortage;
+  document.getElementById('c-shortage').textContent = sh >= 0 ? '여유 '+fmt(sh) : '부족 '+fmt(-sh);
+  document.getElementById('c-shortage').className = 'card-value ' + (sh >= 0 ? 'c-green' : 'c-red');
+  document.getElementById('c-extra-save').textContent = C.extraSave > 0 ? `+${C.extraSave}만원/월` : '충분';
+
+  // Timeline
+  document.getElementById('tl-now').textContent = `갭 ${fmt(gap)} · 현금 ${fmt(S.cash)}`;
+  document.getElementById('tl-move').textContent = `누적 저축 ${fmt(S.save * C.TO_MOVE / 10000)}`;
+  document.getElementById('tl-target').textContent = `총 가용자금 ${fmt(C.total)} (예상매각 ${fmt(S.sale)})`;
+
+  // Donut
+  const dData = [
+    { label:'갭 회수',   v: Math.max(0, C.netGap), color:'#6c8ef5' },
+    { label:'보유현금',  v: S.cash,                 color:'#52d9a0' },
+    { label:'저축 40개월', v: C.saving,             color:'#f5a623' },
+  ];
+  donut.data.labels = dData.map(d=>d.label);
+  donut.data.datasets[0].data = dData.map(d=>d.v);
+  donut.data.datasets[0].backgroundColor = dData.map(d=>d.color);
+  donut.update();
+  document.getElementById('donut-legend').innerHTML = dData.map(d =>
+    `<div class="rl-item"><div class="rl-dot" style="background:${d.color}"></div><span>${d.label}: <strong>${fmt(d.v)}</strong></span></div>`
+  ).join('');
+
+  // Fund bars — 실거주 매입 기준 (대출 비율별)
+  const T = S.target;
+  const cost = T * 0.017; // 취득세 1.3% + 중개 0.4%
+  const scenarios = [
+    { label:`대출 50% (${(T*0.5).toFixed(1)}억 대출)`, need: T*0.50 + cost, color:'var(--accent2)', note:'LTV 50% — 규제지역 적용 여부 확인' },
+    { label:`대출 40% (${(T*0.4).toFixed(1)}억 대출)`, need: T*0.60 + cost, color:'var(--accent)',  note:'투기과열지구 기본 LTV' },
+    { label:`대출 30% (${(T*0.3).toFixed(1)}억 대출)`, need: T*0.70 + cost, color:'var(--accent3)', note:'보수적 대출' },
+    { label:`대출 없음 (전액 현금)`,                    need: T      + cost, color:'var(--danger)',  note:'참고용' },
+  ];
+  const maxNeed = Math.max(...scenarios.map(s=>s.need));
+  document.getElementById('fund-bars').innerHTML = scenarios.map(s => {
+    const pct = Math.min(C.total / s.need * 100, 100);
+    const diff = C.total - s.need;
+    const diffHtml = diff >= 0
+      ? `<span class="c-green">+${fmt(diff)}</span>`
+      : `<span class="c-red">${fmt(diff)}</span>`;
+    return `<div class="fund-row" title="${s.note}">
+      <div class="fund-label">${s.label}</div>
+      <div class="fund-track">
+        <div class="fund-fill" style="width:${pct}%;background:${s.color}">${fmt(C.total)}</div>
+      </div>
+      <div class="fund-note">${diffHtml}</div>
+    </div>`;
+  }).join('');
+
+  // Line chart
+  const labels=[], savArr=[], totArr=[], fundArr=[];
+  for(let m=0; m<=42; m++) {
+    const yr = 2026 + Math.floor((5+m)/12);
+    const mo = (5+m)%12+1;
+    labels.push(`${yr}.${String(mo).padStart(2,'0')}`);
+    const s = S.save*m/10000;
+    savArr.push(+s.toFixed(3));
+    totArr.push(+(S.cash+s).toFixed(3));
+    fundArr.push(+(S.cash+s+Math.max(0,C.netGap)).toFixed(3));
+  }
+  line.data.labels = labels;
+  line.data.datasets = [
+    { label:'누적 저축', data:savArr, borderColor:'#f5a623', backgroundColor:'rgba(245,166,35,0.08)', fill:true, tension:0.3, pointRadius:0 },
+    { label:'현금+저축', data:totArr, borderColor:'#52d9a0', backgroundColor:'rgba(82,217,160,0.08)', fill:true, tension:0.3, pointRadius:0 },
+    { label:'갭회수 포함 총 자금', data:fundArr, borderColor:'#6c8ef5', backgroundColor:'rgba(108,142,245,0.1)', fill:true, tension:0.3, pointRadius:2, borderWidth:2 },
+  ];
+  line.update();
+
+  // Update prop cards (show gap feasibility)
+  renderProps();
+}
+
+// ─── Property Tracker ───────────────────────────
+function renderProps() {
+  const C = compute();
+  const grid = document.getElementById('propGrid');
+  const filtered = properties.filter(p => {
+    if (currentFilter === 'gwacheon') return p.region === 'gwacheon';
+    if (currentFilter === 'bangbae')  return p.region === 'bangbae';
+    if (currentFilter === 'watching') return p.watching;
+    return true;
+  });
+
+  grid.innerHTML = filtered.map(p => {
+    const gapAmt = p.jeonse ? (p.price - p.jeonse).toFixed(1) + '억 갭' : '전세가 미입력';
+    const feasible = (p.jeonse && p.price)
+      ? C.total >= (p.price - p.jeonse + p.price * 0.017)
+      : null;
+    const feasTag = feasible === true
+      ? '<span class="ptag ptag-ok">✓ 자금 가능</span>'
+      : feasible === false
+        ? '<span class="ptag ptag-tight">자금 부족</span>'
+        : '';
+    const typeTag = p.type === '신축' ? 'ptag-new'
+                  : p.type === '재건축' ? 'ptag-reno'
+                  : 'ptag-old';
+    const regionLabel = p.region === 'gwacheon' ? '과천' : '방배';
+    const regionColor = p.region === 'gwacheon' ? 'color:var(--accent)' : 'color:var(--purple)';
+    const isUpcoming = p.year >= 2027;
+    const priceDisplay = p.price ? p.price + '억' : '분양가 미확정';
+    const yearLabel = isUpcoming ? `${p.year}년 입주예정` : `${p.year}년 준공`;
+    return `<div class="prop-card ${p.watching ? 'watching' : ''}" onclick="toggleWatch(${p.id})" style="${isUpcoming ? 'border-color:var(--accent3)' : ''}">
+      <div class="prop-meta" style="${regionColor}; font-weight:600;">${regionLabel}${isUpcoming ? ' <span style="color:var(--accent3)">· 입주예정</span>' : ''}</div>
+      <div class="prop-name">${p.name}</div>
+      <div class="prop-meta">${yearLabel} · ${p.memo}</div>
+      <div class="prop-price" style="color:${p.price ? 'var(--text)' : 'var(--text3)'}">${priceDisplay}</div>
+      <div class="prop-gap-info">${gapAmt}</div>
+      <div class="prop-tags">
+        <span class="ptag ${typeTag}">${p.type}</span>
+        ${feasTag}
+      </div>
+    </div>`;
+  }).join('');
+
+  if (filtered.length === 0) {
+    grid.innerHTML = `<div style="color:var(--text3); font-size:13px; padding:20px; grid-column:1/-1;">해당하는 매물이 없습니다.</div>`;
+  }
+}
+
+function toggleWatch(id) {
+  const p = properties.find(x=>x.id===id);
+  if (p) { p.watching = !p.watching; savePropStorage(); renderProps(); }
+}
+
+function filterProps(f, btn) {
+  currentFilter = f;
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  renderProps();
+}
+
+function toggleAddForm() {
+  const f = document.getElementById('addForm');
+  f.classList.toggle('show');
+}
+
+function addProp() {
+  const name   = document.getElementById('f-name').value.trim();
+  const region = document.getElementById('f-region').value;
+  const price  = parseFloat(document.getElementById('f-price').value);
+  const year   = parseInt(document.getElementById('f-year').value) || 0;
+  const memo   = document.getElementById('f-memo').value.trim();
+  const jeonse = parseFloat(document.getElementById('f-jeonse').value) || null;
+  const type   = document.getElementById('f-type').value;
+  if (!name || isNaN(price)) { alert('단지명과 호가는 필수입니다.'); return; }
+  properties.push({ id: nextId++, name, region, price, year, memo, jeonse, type, watching: false });
+  savePropStorage();
+  document.getElementById('addForm').classList.remove('show');
+  ['f-name','f-price','f-year','f-memo','f-jeonse'].forEach(id => document.getElementById(id).value = '');
+  renderProps();
+}
+
+// ─── Sliders ────────────────────────────────────
+function bindSlider(id, key, labelId, displayFn) {
+  const el = document.getElementById(id);
+  el.addEventListener('input', () => {
+    S[key] = +el.value;
+    document.getElementById(labelId).textContent = displayFn(S[key]);
+    update();
+  });
+}
+bindSlider('s-price',  'price',  'lv-price',  v => v+'억');
+bindSlider('s-jeonse', 'jeonse', 'lv-jeonse', v => v+'억');
+bindSlider('s-cash',   'cash',   'lv-cash',   v => v+'억');
+bindSlider('s-save',   'save',   'lv-save',   v => v+'만원');
+bindSlider('s-sale',   'sale',   'lv-sale',   v => v+'억');
+bindSlider('s-target', 'target', 'lv-target', v => v+'억');
+
+// ─── Memo ────────────────────────────────────────
+const DEFAULT_MEMOS = [
+  {
+    id:1, title:'방배5구역 재건축',
+    cat:'재건축', region:'bangbae', when:'2027년 상반기 관리처분 목표',
+    body:'조합설립인가 완료. 현재 사업시행인가 단계.\n예상 입주 2031~2032년. 현재 매매가 15~16억이나 재건축 프리미엄 포함.\n일반분양 시 추가분담금 주의. 갈아타기 타겟으로는 완공 후가 현실적.',
+    date:'2026.06'
+  },
+  {
+    id:2, title:'과천 지식정보타운 추가 블록 분양',
+    cat:'분양', region:'gwacheon', when:'2027년 예정 (미확정)',
+    body:'S5~S7블록 후속 분양 예정 (시행사 미확정).\n분양가 상한제 적용 시 시세 대비 저렴 가능성 있음.\n청약 당첨 시 평촌 처분 일정과 충돌 가능 → 일시적 2주택 요건 검토 필요.',
+    date:'2026.06'
+  },
+  {
+    id:3, title:'과천 푸르지오 어울림 라비엔오 입주',
+    cat:'입주예정', region:'gwacheon', when:'2026년 하반기',
+    body:'약 1,500세대 입주. 단기 전세 물량 증가 → 과천 전세가 하락 압력 가능성.\n매매가에 미치는 영향 모니터링 필요. 갭 투자 매력 일시 증가 시점.',
+    date:'2026.06'
+  },
+  {
+    id:4, title:'방배 삼익 재건축 추진위 현황',
+    cat:'재건축', region:'bangbae', when:'2028~2029년 조합설립 목표',
+    body:'아직 추진위 단계. 사업 속도 느림.\n현재 구축 매매가 14~15억 수준이나 재건축 기대감 반영.\n실거주보다 투자 성격이 강한 매물 — 갈아타기 대상으로는 신중.',
+    date:'2026.06'
+  },
+];
+
+const _storedMemos = localStorage.getItem('memos');
+let memos = (_storedMemos !== null && JSON.parse(_storedMemos).length > 0)
+  ? JSON.parse(_storedMemos)
+  : JSON.parse(JSON.stringify(DEFAULT_MEMOS));
+
+let memoNextId = Math.max(...memos.map(m => m.id), 0) + 1;
+let memoFilter = 'all';
+
+function saveMemos() { localStorage.setItem('memos', JSON.stringify(memos)); }
+if (_storedMemos === null) saveMemos(); // 처음 열면 기본값 저장
+
+const regionLabel = { gwacheon:'과천', bangbae:'방배', both:'공통' };
+const regionClass  = { gwacheon:'mr-gwacheon', bangbae:'mr-bangbae', both:'mr-both' };
+
+function renderMemos() {
+  const grid = document.getElementById('memoGrid');
+  const filtered = memos.filter(m => memoFilter === 'all' || m.cat === memoFilter);
+  if (!filtered.length) {
+    grid.innerHTML = `<div class="memo-empty">메모가 없습니다. + 메모 추가로 기록하세요.</div>`;
+    return;
+  }
+  grid.innerHTML = filtered.map(m => `
+    <div class="memo-card">
+      <button class="memo-del" onclick="deleteMemo(${m.id},event)" title="삭제">✕</button>
+      <div class="memo-top">
+        <span class="memo-cat-badge mc-${m.cat}">${m.cat}</span>
+        <span class="memo-region-badge ${regionClass[m.region]}">${regionLabel[m.region]}</span>
+        <span class="memo-title">${m.title}</span>
+        <span class="memo-date">${m.date}</span>
+      </div>
+      ${m.when ? `<div class="memo-timeline-tag">⏱ ${m.when}</div>` : ''}
+      <div class="memo-body" style="margin-top:8px;">${m.body}</div>
+    </div>
+  `).join('');
+}
+
+function filterMemo(f, btn) {
+  memoFilter = f;
+  document.querySelectorAll('.memo-cat-tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  renderMemos();
+}
+
+function toggleMemoForm() {
+  document.getElementById('memoForm').classList.toggle('show');
+}
+
+function addMemo() {
+  const title  = document.getElementById('mf-title').value.trim();
+  const cat    = document.getElementById('mf-cat').value;
+  const region = document.getElementById('mf-region').value;
+  const when   = document.getElementById('mf-when').value.trim();
+  const body   = document.getElementById('mf-body').value.trim();
+  if (!title) { alert('제목을 입력하세요.'); return; }
+  const now = new Date();
+  const date = `${now.getFullYear()}.${String(now.getMonth()+1).padStart(2,'0')}`;
+  memos.unshift({ id: memoNextId++, title, cat, region, when, body, date });
+  saveMemos();
+  document.getElementById('memoForm').classList.remove('show');
+  ['mf-title','mf-when','mf-body'].forEach(id => document.getElementById(id).value = '');
+  renderMemos();
+}
+
+function resetMemosToDefault() {
+  if (!confirm('기본 예시 메모로 초기화할까요? 현재 메모가 모두 삭제됩니다.')) return;
+  memos = JSON.parse(JSON.stringify(DEFAULT_MEMOS));
+  memoNextId = memos.length + 1;
+  saveMemos();
+  renderMemos();
+}
+
+function deleteMemo(id, e) {
+  e.stopPropagation();
+  if (!confirm('이 메모를 삭제할까요?')) return;
+  memos = memos.filter(m => m.id !== id);
+  saveMemos();
+  renderMemos();
+}
+
+// ─── 실거래가 히스토리 ────────────────────────────
+// PRICE_DATA_START
+const priceHistory = [
+  {
+    date: "2026-06-05",
+    period: "2026년 5월 15일 ~ 6월 5일",
+    data: [
+      { name:"원문동 래미안슈르",             region:"gwacheon", size:"84㎡", price:17.85, avgPrice:18.4,  note:"5/13 17.85억·5/9 19억·5/6 17.4억" },
+      { name:"과천센트럴파크 푸르지오써밋",   region:"gwacheon", size:"84㎡", price:19.9,  avgPrice:19.85, note:"5/23 19.9억·5/8 19.8억" },
+      { name:"과천 자이",                      region:"gwacheon", size:"84㎡", price:20.2,  avgPrice:20.2,  note:"5/2 20.2억·4/28 20.3억 (직거래 제외)" },
+      { name:"과천 위버필드",                  region:"gwacheon", size:"84㎡", price:20.5,  avgPrice:19.1,  note:"5/8 20.5억·4/16 20.65억" },
+      { name:"과천 푸르지오 어울림 라비엔오",  region:"gwacheon", size:"81㎡", price:21.0,  avgPrice:21.0,  note:"5/5 21억 (81㎡ 기준)" },
+      { name:"디에이치방배",                   region:"bangbae",  size:"59㎡", price:null,  avgPrice:null,  note:"2026년 9월 입주 예정 — 실거래 없음" },
+      { name:"방배그랑자이",                   region:"bangbae",  size:"72㎡", price:null,  avgPrice:null,  note:"84㎡ 없음·72㎡ 2/7 26억·세대수 500 미달 재검토" },
+    ],
+    summary: "크롬 확장으로 호갱노노 국토부 데이터 직접 수집. 과천 5개 단지 확인: 래미안슈르 18.4억 / 센트럴파크써밋 19.85억 / 자이 20.2억 / 위버필드 19.1억 / 라비엔오 21억. 방배는 현재 500세대+ 브랜드 단지 부재 — 디에이치방배 9월 입주 후 본격 추적 예정."
+  }
+];
+// PRICE_DATA_END
+
+let historyFilter = 'all';
+let historyChart;
+
+function initHistoryChart() {
+  const ctx = document.getElementById('historyChart').getContext('2d');
+  historyChart = new Chart(ctx, {
+    type: 'line',
+    data: { labels: [], datasets: [] },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { labels: { color: '#8890b5', font: { size: 11 }, boxWidth: 12 } },
+        tooltip: { callbacks: { label: c => c.raw !== null ? ` ${c.dataset.label}: ${c.raw}억` : ` ${c.dataset.label}: 거래없음` } }
+      },
+      scales: {
+        x: { ticks: { color: '#5c6385', font: { size: 10 } }, grid: { color: '#1e2035' } },
+        y: { ticks: { color: '#5c6385', callback: v => v + '억', font: { size: 10 } }, grid: { color: '#1e2035' } }
+      },
+      animation: { duration: 300 },
+    }
+  });
+}
+
+const COMPLEX_COLORS = {
+  '래미안 슈르': '#6c8ef5',
+  '과천센트럴파크 푸르지오써밋': '#52d9a0',
+  '과천 자이': '#f5a623',
+  '과천 위버필드': '#c084fc',
+  '과천 푸르지오 어울림 라비엔오': '#f56c6c',
+  '디에이치방배': '#38bdf8',
+  '방배 래미안 아트리치': '#fb7185',
+  '방배 아크로리버뷰': '#a3e635',
+};
+
+function renderHistory() {
+  const filtered = historyFilter === 'all'
+    ? priceHistory
+    : priceHistory.map(h => ({ ...h, data: h.data.filter(d => d.region === historyFilter) })).filter(h => h.data.length > 0);
+
+  document.getElementById('history-count').textContent = priceHistory.length;
+
+  // 테이블
+  const tbody = document.getElementById('historyTbody');
+  const rows = [];
+  filtered.forEach(h => {
+    h.data.forEach(d => {
+      rows.push(`<tr>
+        <td style="color:var(--text3)">${h.period}</td>
+        <td style="font-weight:600">${d.name}</td>
+        <td><span class="ptag ${d.region === 'gwacheon' ? 'ptag-new' : 'ptag-reno'}">${d.region === 'gwacheon' ? '과천' : '방배'}</span></td>
+        <td style="color:var(--text2)">${d.size}</td>
+        <td style="font-weight:700;color:${d.price ? 'var(--accent2)' : 'var(--text3)'}">${d.price ? d.price + '억' : '—'}</td>
+        <td style="color:var(--text3);font-size:11px">${d.note}</td>
+      </tr>`);
+    });
+  });
+  tbody.innerHTML = rows.join('') || `<tr><td colspan="6" style="text-align:center;color:var(--text3);padding:20px">데이터 없음</td></tr>`;
+
+  // 차트 — 단지별 시계열
+  const allNames = [...new Set(priceHistory.flatMap(h => h.data.map(d => d.name)))].filter(n => {
+    if (historyFilter === 'gwacheon') return priceHistory[0]?.data.find(d => d.name === n)?.region === 'gwacheon';
+    if (historyFilter === 'bangbae')  return priceHistory[0]?.data.find(d => d.name === n)?.region === 'bangbae';
+    return true;
+  });
+  const labels = priceHistory.map(h => h.period.replace('년 ', '.').replace('월', '').replace(' 15일 ~ ', '~'));
+
+  historyChart.data.labels = labels;
+  historyChart.data.datasets = allNames.map(name => ({
+    label: name,
+    data: priceHistory.map(h => h.data.find(d => d.name === name)?.price ?? null),
+    borderColor: COMPLEX_COLORS[name] || '#888',
+    backgroundColor: 'transparent',
+    tension: 0.3,
+    pointRadius: 5,
+    pointHoverRadius: 7,
+    spanGaps: true,
+  }));
+  historyChart.update();
+}
+
+function filterHistory(f, btn) {
+  historyFilter = f;
+  document.querySelectorAll('.full-panel .tab').forEach(t => {
+    if (t.onclick && t.onclick.toString().includes('filterHistory')) t.classList.remove('active');
+  });
+  btn.classList.add('active');
+  renderHistory();
+}
+
+// ─── Init ────────────────────────────────────────
+initCharts();
+initHistoryChart();
+update();
+renderMemos();
+renderHistory();
+</script>
+</body>
+</html>
