@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>퍼스널 컬러 진단</title>
+<style>
+  :root {
+    --bg: #fbf7f2;
+    --surface: #ffffff;
+    --surface2: #f4efe8;
+    --border: #ece3d8;
+    --text: #2f2a24;
+    --text2: #83786a;
+    --text3: #b3a996;
+    --accent: #e8795a;
+    --radius: 16px;
+    --shadow: 0 4px 16px rgba(60, 40, 20, 0.06);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
+    min-height: 100vh;
+  }
+  .page { max-width: 760px; margin: 0 auto; padding: 32px 20px 80px; }
+
+  /* Hero */
+  .hero { text-align: center; margin-bottom: 26px; }
+  .hero h1 { font-size: 26px; font-weight: 800; letter-spacing: -0.3px; }
+  .hero h1 span { color: var(--accent); }
+  .hero p { color: var(--text2); font-size: 13.5px; margin-top: 8px; line-height: 1.5; }
+
+  .tabs { display: flex; justify-content: center; gap: 8px; margin-top: 20px; }
+  .tab-btn {
+    border: 1px solid var(--border); background: var(--surface); color: var(--text2);
+    font-size: 13px; font-weight: 600; padding: 9px 18px; border-radius: 20px; cursor: pointer;
+    transition: all .15s;
+  }
+  .tab-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .tab-btn:hover:not(.active) { border-color: var(--accent); color: var(--accent); }
+
+  .panel-section { display: none; }
+  .panel-section.active { display: block; }
+
+  /* Progress */
+  .progress-bar { height: 6px; background: var(--surface2); border-radius: 10px; overflow: hidden; margin: 24px 0 18px; }
+  .progress-fill { height: 100%; background: var(--accent); width: 0%; transition: width .3s ease; border-radius: 10px; }
+  .progress-label { text-align: center; font-size: 12px; color: var(--text3); margin-bottom: 4px; }
+
+  /* Quiz card */
+  .quiz-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 28px 24px; box-shadow: var(--shadow);
+  }
+  .quiz-q { font-size: 16px; font-weight: 700; margin-bottom: 18px; line-height: 1.5; }
+  .quiz-options { display: flex; flex-direction: column; gap: 10px; }
+  .quiz-opt {
+    text-align: left; border: 1.5px solid var(--border); background: var(--surface2);
+    border-radius: 12px; padding: 13px 16px; font-size: 13.5px; color: var(--text); cursor: pointer;
+    transition: all .15s;
+  }
+  .quiz-opt:hover { border-color: var(--accent); }
+  .quiz-opt.selected { border-color: var(--accent); background: #fdece5; font-weight: 700; color: var(--accent); }
+  .quiz-nav { display: flex; justify-content: space-between; margin-top: 22px; }
+  .nav-btn {
+    border: none; background: transparent; color: var(--text2); font-size: 13px; font-weight: 600;
+    cursor: pointer; padding: 8px 6px;
+  }
+  .nav-btn:disabled { opacity: 0.3; cursor: default; }
+  .nav-btn.primary { color: var(--accent); }
+
+  /* Photo panel */
+  .upload-box {
+    border: 2px dashed var(--border); border-radius: var(--radius); background: var(--surface);
+    padding: 30px 20px; text-align: center; cursor: pointer; transition: border-color .15s;
+  }
+  .upload-box:hover { border-color: var(--accent); }
+  .upload-box input { display: none; }
+  .upload-hint { font-size: 12px; color: var(--text3); margin-top: 6px; line-height: 1.5; }
+  .canvas-wrap { text-align: center; margin-top: 16px; }
+  #photoCanvas { max-width: 100%; border-radius: 12px; cursor: crosshair; box-shadow: var(--shadow); }
+  .photo-instruction {
+    font-size: 12.5px; color: var(--text2); text-align: center; margin: 10px 0 4px; line-height: 1.5;
+  }
+  .sample-readout {
+    display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 12px; font-size: 13px; color: var(--text2);
+  }
+  .sample-swatch { width: 28px; height: 28px; border-radius: 8px; border: 1px solid var(--border); }
+  .photo-disclaimer {
+    font-size: 11.5px; color: var(--text3); text-align: center; margin-top: 16px; line-height: 1.6;
+    border-top: 1px dashed var(--border); padding-top: 12px;
+  }
+
+  /* Result */
+  .result-head { text-align: center; margin-bottom: 22px; }
+  .result-badge {
+    display: inline-block; font-size: 12px; font-weight: 700; padding: 5px 14px; border-radius: 20px;
+    background: var(--surface2); color: var(--text2); margin-bottom: 10px;
+  }
+  .result-name { font-size: 28px; font-weight: 800; }
+  .result-tagline { font-size: 13.5px; color: var(--text2); margin-top: 6px; }
+  .result-strip { display: flex; height: 14px; border-radius: 8px; overflow: hidden; margin: 18px 0; box-shadow: var(--shadow); }
+  .result-strip div { flex: 1; }
+
+  .axis-block { display: flex; flex-direction: column; gap: 10px; margin-bottom: 22px; }
+  .axis-row { display: flex; align-items: center; gap: 10px; font-size: 11.5px; color: var(--text3); }
+  .axis-labels { display: flex; justify-content: space-between; font-size: 11px; color: var(--text3); width: 100%; }
+  .axis-track { position: relative; height: 8px; background: var(--surface2); border-radius: 6px; flex: 1; }
+  .axis-dot { position: absolute; top: -3px; width: 14px; height: 14px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 3px var(--surface); }
+
+  .result-desc {
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 18px 20px; font-size: 13.5px; line-height: 1.7; color: var(--text); box-shadow: var(--shadow); margin-bottom: 18px;
+  }
+
+  .swatch-section { margin-bottom: 20px; }
+  .swatch-title { font-size: 13px; font-weight: 700; color: var(--text2); margin-bottom: 10px; }
+  .swatch-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+  @media (max-width: 560px) { .swatch-grid { grid-template-columns: repeat(3, 1fr); } }
+  .swatch {
+    border-radius: 12px; overflow: hidden; border: 1px solid var(--border); cursor: pointer; position: relative;
+    box-shadow: var(--shadow); background: var(--surface);
+  }
+  .swatch-color { height: 56px; }
+  .swatch-hex { font-size: 10.5px; text-align: center; padding: 5px 0; color: var(--text2); font-weight: 600; }
+  .swatch.copied .swatch-hex { color: var(--accent); }
+  .swatch.copied .swatch-hex::after { content: ' 복사됨'; }
+
+  .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
+  @media (max-width: 560px) { .info-grid { grid-template-columns: 1fr; } }
+  .info-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px;
+    box-shadow: var(--shadow);
+  }
+  .info-label { font-size: 11px; color: var(--text3); font-weight: 700; margin-bottom: 4px; letter-spacing: .2px; }
+  .info-value { font-size: 13px; color: var(--text); line-height: 1.6; }
+
+  .result-actions { display: flex; justify-content: center; gap: 10px; margin-top: 24px; }
+  .action-btn {
+    border: 1px solid var(--border); background: var(--surface); color: var(--text2); font-size: 13px;
+    font-weight: 600; padding: 10px 18px; border-radius: 20px; cursor: pointer;
+  }
+  .action-btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+  .rough-note {
+    font-size: 12px; color: var(--accent); background: #fdece5; border-radius: 10px; padding: 10px 14px;
+    text-align: center; margin-bottom: 16px;
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="hero">
+    <h1>퍼스널 <span>컬러</span> 진단</h1>
+    <p>몇 가지 질문에 답하면 나에게 어울리는 웜/쿨 톤과<br>추천 컬러 팔레트를 알려드려요.</p>
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="quiz" onclick="switchTab('quiz')">퀴즈로 진단</button>
+      <button class="tab-btn" data-tab="photo" onclick="switchTab('photo')">사진으로 참고 진단</button>
+    </div>
+  </div>
+
+  <!-- QUIZ -->
+  <section id="quiz-panel" class="panel-section active">
+    <div class="progress-label" id="progressLabel">질문 1 / 8</div>
+    <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+    <div class="quiz-card">
+      <div class="quiz-q" id="quizQ"></div>
+      <div class="quiz-options" id="quizOptions"></div>
+      <div class="quiz-nav">
+        <button class="nav-btn" id="prevBtn" onclick="prevQuestion()">이전</button>
+        <button class="nav-btn primary" id="nextBtn" onclick="nextQuestion()" disabled>다음</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- PHOTO -->
+  <section id="photo-panel" class="panel-section">
+    <div class="upload-box" id="uploadBox" onclick="document.getElementById('photoInput').click()">
+      <div style="font-size:28px;margin-bottom:8px;">📷</div>
+      <div style="font-weight:700;font-size:14px;">사진을 선택해주세요</div>
+      <div class="upload-hint">자연광 아래에서 찍은, 화장기 없는 정면 사진일수록<br>더 참고할 만한 결과가 나와요.</div>
+      <input type="file" id="photoInput" accept="image/*" onchange="handlePhoto(event)">
+    </div>
+    <div class="canvas-wrap" id="canvasWrap" style="display:none;">
+      <p class="photo-instruction">뺨이나 이마처럼 <b>화장을 하지 않은 맨 피부</b> 부분을 클릭해주세요.</p>
+      <canvas id="photoCanvas"></canvas>
+      <div class="sample-readout" id="sampleReadout" style="display:none;">
+        <div class="sample-swatch" id="sampleSwatch"></div>
+        <span id="sampleText"></span>
+      </div>
+    </div>
+    <div class="photo-disclaimer">
+      사진 진단은 조명·화면·카메라 설정에 따라 오차가 클 수 있는 간이 추정이에요.<br>
+      더 정확한 결과가 필요하다면 퀴즈 진단을 함께 활용해보세요. 업로드한 사진은 서버로 전송되지 않고 브라우저 안에서만 처리돼요.
+    </div>
+  </section>
+
+  <!-- RESULT -->
+  <section id="result-panel" class="panel-section">
+    <div id="roughNote" class="rough-note" style="display:none;">📷 사진 기반 간이 추정 결과예요. 정확도를 높이려면 퀴즈 진단도 함께 해보세요.</div>
+    <div class="result-head">
+      <div class="result-badge" id="resultBadge"></div>
+      <div class="result-name" id="resultName"></div>
+      <div class="result-tagline" id="resultTagline"></div>
+    </div>
+    <div class="result-strip" id="resultStrip"></div>
+
+    <div class="axis-block" id="axisBlock"></div>
+
+    <div class="result-desc" id="resultDesc"></div>
+
+    <div class="swatch-section">
+      <div class="swatch-title">✨ 추천 컬러</div>
+      <div class="swatch-grid" id="bestSwatches"></div>
+    </div>
+    <div class="swatch-section">
+      <div class="swatch-title">🚫 피하면 좋은 컬러</div>
+      <div class="swatch-grid" id="avoidSwatches"></div>
+    </div>
+
+    <div class="info-grid">
+      <div class="info-card"><div class="info-label">베스트 뉴트럴</div><div class="info-value" id="infoNeutral"></div></div>
+      <div class="info-card"><div class="info-label">어울리는 주얼리</div><div class="info-value" id="infoMetal"></div></div>
+      <div class="info-card"><div class="info-label">립 · 블러셔</div><div class="info-value" id="infoMakeupLip"></div></div>
+      <div class="info-card"><div class="info-label">아이섀도우</div><div class="info-value" id="infoMakeupEye"></div></div>
+    </div>
+
+    <div class="result-actions">
+      <button class="action-btn" onclick="switchTab('quiz'); resetQuiz();">퀴즈 다시하기</button>
+      <button class="action-btn primary" onclick="switchTab('photo');">사진으로도 확인하기</button>
+    </div>
+  </section>
+
+</div>
+
+<script>
+// ─── Data ────────────────────────────────────────
+const QUESTIONS = [
+  { q: '손목 안쪽 혈관 색깔을 보면?', options: [
+    { label: '초록빛이 돈다', warm: 1, light: 0 },
+    { label: '파란빛/보랏빛이 돈다', warm: -1, light: 0 },
+    { label: '잘 모르겠다, 색이 섞여 있다', warm: 0, light: 0 },
+  ]},
+  { q: '강한 햇볕 아래에서 피부는 보통?', options: [
+    { label: '잘 그을리고, 화상은 잘 안 생긴다', warm: 1, light: 0 },
+    { label: '쉽게 빨개지고 화상을 입기 쉽다', warm: -1, light: 0 },
+    { label: '잘 타지도, 잘 빨개지지도 않는다', warm: 0, light: 0 },
+  ]},
+  { q: '잘 어울린다는 얘기를 자주 들은 액세서리는?', options: [
+    { label: '골드', warm: 1, light: 0 },
+    { label: '실버', warm: -1, light: 0 },
+    { label: '뭘 해도 무난하다', warm: 0, light: 0 },
+  ]},
+  { q: '화장을 하지 않았을 때 얼굴빛은?', options: [
+    { label: '노르스름하다 / 올리브빛이다', warm: 1, light: 0 },
+    { label: '핑크빛 / 붉은 기가 있다', warm: -1, light: 0 },
+    { label: '거의 무색에 가깝다', warm: 0, light: 0 },
+  ]},
+  { q: '타고난 눈동자 색은?', options: [
+    { label: '밝은 갈색 / 호박색', warm: 1, light: 1 },
+    { label: '짙은 흑갈색 / 블랙', warm: 0, light: -1 },
+    { label: '회갈색 / 차가운 브라운', warm: -1, light: 0 },
+  ]},
+  { q: '타고난 모발 색은?', options: [
+    { label: '라이트 브라운 / 골드 브라운', warm: 1, light: 1 },
+    { label: '다크 브라운 / 블랙', warm: 0, light: -1 },
+    { label: '애쉬 브라운 / 애쉬 블랙', warm: -1, light: 0 },
+  ]},
+  { q: '아래 색 조합 중 얼굴이 가장 화사해 보이는 쪽은?', options: [
+    { label: '아이보리 + 코랄', warm: 1, light: 1 },
+    { label: '화이트 + 로얄블루', warm: -1, light: -1 },
+    { label: '카멜 + 브라운', warm: 1, light: -1 },
+    { label: '그레이 + 라벤더', warm: -1, light: 1 },
+  ]},
+  { q: '가장 잘 받는다는 얘기를 들었던 색조 화장은?', options: [
+    { label: '오렌지 / 코랄 계열', warm: 1, light: 1 },
+    { label: '브라운 / 테라코타 계열', warm: 1, light: -1 },
+    { label: '은은한 핑크 / 로즈 계열', warm: -1, light: 1 },
+    { label: '선명한 와인 / 블루레드 계열', warm: -1, light: -1 },
+  ]},
+];
+
+const SEASONS = {
+  springWarm: {
+    name: '봄 웜톤', en: 'Spring Warm', badge: '🌷 SPRING WARM',
+    tagline: '화사하고 생기 넘치는, 웜 · 라이트',
+    theme: '#F4A261',
+    desc: '노란빛이 도는 화사한 피부 베이스를 가지고 있어요. 밝고 맑은 색, 생기 있는 컬러를 걸치면 얼굴빛이 환해지고 생동감이 살아나요. 반대로 어둡고 탁한 색이나 차가운 회색 계열은 안색을 칙칙해 보이게 할 수 있어요.',
+    best: [
+      { hex: '#F4A261', label: '코랄 오렌지' }, { hex: '#FFD972', label: '옐로우' },
+      { hex: '#FFB6A3', label: '살몬핑크' }, { hex: '#8ED081', label: '라이트 그린' },
+      { hex: '#FFF3B0', label: '아이보리 옐로우' }, { hex: '#F7CAC9', label: '피치' },
+      { hex: '#E9C46A', label: '골드 베이지' }, { hex: '#7FCDCD', label: '아쿠아' },
+    ],
+    avoid: [
+      { hex: '#4B4B4B', label: '차콜 그레이' }, { hex: '#2C2C54', label: '네이비' },
+      { hex: '#5C3A21', label: '다크 브라운' }, { hex: '#8B0000', label: '버건디' },
+    ],
+    neutral: '아이보리, 라이트 베이지, 라이트 카멜',
+    metal: '골드 · 로즈골드',
+    lip: '코랄, 오렌지 레드, 살몬핑크',
+    eye: '브라운골드, 피치, 라이트 카키',
+  },
+  summerCool: {
+    name: '여름 쿨톤', en: 'Summer Cool', badge: '💧 SUMMER COOL',
+    tagline: '부드럽고 우아한, 쿨 · 라이트',
+    theme: '#9BB8CD',
+    desc: '푸른빛이 도는 부드러운 피부 베이스를 가지고 있어요. 파스텔톤, 뿌옇고 은은한 색이 우아하고 청순한 분위기를 살려줘요. 반대로 강렬한 오렌지나 머스타드 계열은 얼굴과 따로 노는 느낌을 줄 수 있어요.',
+    best: [
+      { hex: '#A9C9E2', label: '파우더 블루' }, { hex: '#C8A2C8', label: '라벤더' },
+      { hex: '#F7CAD0', label: '로즈 핑크' }, { hex: '#B8B8D1', label: '소프트 퍼플' },
+      { hex: '#DDE6ED', label: '아이스 그레이' }, { hex: '#E8B4BC', label: '더스티 핑크' },
+      { hex: '#8FA3AD', label: '블루 그레이' }, { hex: '#C6DCE8', label: '스카이블루' },
+    ],
+    avoid: [
+      { hex: '#D2691E', label: '오렌지' }, { hex: '#C08552', label: '머스타드' },
+      { hex: '#7B3F00', label: '브라운' }, { hex: '#808000', label: '카키' },
+    ],
+    neutral: '그레이, 화이트, 소프트 네이비',
+    metal: '실버 · 화이트골드',
+    lip: '로즈, 베리핑크, 모브',
+    eye: '그레이, 라벤더, 로즈브라운',
+  },
+  autumnWarm: {
+    name: '가을 웜톤', en: 'Autumn Warm', badge: '🍂 AUTUMN WARM',
+    tagline: '깊고 차분한, 웜 · 딥',
+    theme: '#B5651D',
+    desc: '노란빛이 도는 깊고 차분한 피부 베이스를 가지고 있어요. 카멜, 브라운, 올리브처럼 짙고 그윽한 색이 세련되고 안정감 있는 분위기를 만들어줘요. 반대로 파스텔톤이나 새하얀 화이트는 얼굴이 붕 뜨는 느낌을 줄 수 있어요.',
+    best: [
+      { hex: '#B5651D', label: '카멜' }, { hex: '#C08552', label: '머스타드 베이지' },
+      { hex: '#8A6D3B', label: '올리브 브라운' }, { hex: '#6B8E23', label: '올리브 그린' },
+      { hex: '#D2691E', label: '테라코타' }, { hex: '#7B3F00', label: '다크 브라운' },
+      { hex: '#C19A6B', label: '카키 베이지' }, { hex: '#A0522D', label: '브릭' },
+    ],
+    avoid: [
+      { hex: '#F7CAD0', label: '파스텔 핑크' }, { hex: '#DDE6ED', label: '아이스 그레이' },
+      { hex: '#FFFFFF', label: '새하얀 화이트' }, { hex: '#B8B8D1', label: '연보라' },
+    ],
+    neutral: '브라운, 카키, 아이보리',
+    metal: '골드 · 브론즈',
+    lip: '브릭레드, 테라코타, 브라운 레드',
+    eye: '카키, 브라운, 골드 샴페인',
+  },
+  winterCool: {
+    name: '겨울 쿨톤', en: 'Winter Cool', badge: '❄️ WINTER COOL',
+    tagline: '선명하고 강렬한, 쿨 · 딥',
+    theme: '#4B0082',
+    desc: '푸른빛이 도는 뚜렷하고 선명한 피부 베이스를 가지고 있어요. 블랙, 화이트처럼 명암 대비가 강한 색이나 채도 높은 원색이 시크하고 강렬한 인상을 살려줘요. 반대로 오렌지, 베이지, 카키 같은 웜톤 컬러는 얼굴빛을 흐리게 만들 수 있어요.',
+    best: [
+      { hex: '#000000', label: '블랙' }, { hex: '#FFFFFF', label: '화이트' },
+      { hex: '#7B2D8E', label: '푸시아' }, { hex: '#0F52BA', label: '로얄 블루' },
+      { hex: '#046A38', label: '에메랄드' }, { hex: '#722F37', label: '와인' },
+      { hex: '#4B0082', label: '딥퍼플' }, { hex: '#B0E0E6', label: '아이스 블루' },
+    ],
+    avoid: [
+      { hex: '#D2691E', label: '오렌지' }, { hex: '#DEB887', label: '베이지' },
+      { hex: '#C08552', label: '머스타드' }, { hex: '#808000', label: '카키' },
+    ],
+    neutral: '블랙, 화이트, 차콜',
+    metal: '실버 · 화이트골드',
+    lip: '블루레드, 와인, 푸시아',
+    eye: '블랙, 차콜, 퍼플',
+  },
+};
+
+// ─── Quiz state ──────────────────────────────────
+let qIndex = 0;
+let answers = new Array(QUESTIONS.length).fill(null);
+
+function renderQuestion() {
+  const item = QUESTIONS[qIndex];
+  document.getElementById('quizQ').textContent = item.q;
+  document.getElementById('progressLabel').textContent = `질문 ${qIndex + 1} / ${QUESTIONS.length}`;
+  document.getElementById('progressFill').style.width = `${((qIndex) / QUESTIONS.length) * 100}%`;
+
+  const optsWrap = document.getElementById('quizOptions');
+  optsWrap.innerHTML = item.options.map((opt, i) => `
+    <button class="quiz-opt ${answers[qIndex] === i ? 'selected' : ''}" onclick="selectOption(${i})">${opt.label}</button>
+  `).join('');
+
+  document.getElementById('prevBtn').disabled = qIndex === 0;
+  const nextBtn = document.getElementById('nextBtn');
+  nextBtn.textContent = qIndex === QUESTIONS.length - 1 ? '결과 보기' : '다음';
+  nextBtn.disabled = answers[qIndex] === null;
+}
+
+function selectOption(i) {
+  answers[qIndex] = i;
+  renderQuestion();
+}
+
+function nextQuestion() {
+  if (answers[qIndex] === null) return;
+  if (qIndex === QUESTIONS.length - 1) {
+    computeQuizResult();
+    return;
+  }
+  qIndex++;
+  renderQuestion();
+}
+
+function prevQuestion() {
+  if (qIndex === 0) return;
+  qIndex--;
+  renderQuestion();
+}
+
+function resetQuiz() {
+  qIndex = 0;
+  answers = new Array(QUESTIONS.length).fill(null);
+  renderQuestion();
+}
+
+function computeQuizResult() {
+  let warmScore = 0, lightScore = 0;
+  QUESTIONS.forEach((item, i) => {
+    const opt = item.options[answers[i]];
+    warmScore += opt.warm;
+    lightScore += opt.light;
+  });
+  document.getElementById('progressFill').style.width = '100%';
+  const seasonKey = pickSeason(warmScore, lightScore);
+  showResult(seasonKey, { warmScore, lightScore, maxAxis: 8, rough: false });
+}
+
+function pickSeason(warm, light) {
+  if (warm >= 0 && light >= 0) return 'springWarm';
+  if (warm >= 0 && light < 0) return 'autumnWarm';
+  if (warm < 0 && light >= 0) return 'summerCool';
+  return 'winterCool';
+}
+
+// ─── Photo diagnosis ─────────────────────────────
+function handlePhoto(evt) {
+  const file = evt.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.getElementById('photoCanvas');
+      const maxW = 420;
+      const scale = Math.min(1, maxW / img.width);
+      canvas.width = img.width * scale;
+      canvas.height = img.height * scale;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      document.getElementById('canvasWrap').style.display = 'block';
+      document.getElementById('sampleReadout').style.display = 'none';
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+document.getElementById('photoCanvas').addEventListener('click', (e) => {
+  const canvas = e.target;
+  const rect = canvas.getBoundingClientRect();
+  const x = Math.round((e.clientX - rect.left) * (canvas.width / rect.width));
+  const y = Math.round((e.clientY - rect.top) * (canvas.height / rect.height));
+  const ctx = canvas.getContext('2d');
+  const [r, g, b] = ctx.getImageData(x, y, 1, 1).data;
+
+  const hex = '#' + [r, g, b].map(v => v.toString(16).padStart(2, '0')).join('');
+  document.getElementById('sampleSwatch').style.background = hex;
+  document.getElementById('sampleText').textContent = `샘플 색상: ${hex.toUpperCase()}`;
+  document.getElementById('sampleReadout').style.display = 'flex';
+
+  const { warm, light } = estimateFromPixel(r, g, b);
+  const seasonKey = pickSeason(warm, light);
+  showResult(seasonKey, { warmScore: warm, lightScore: light, maxAxis: 1, rough: true });
+});
+
+function estimateFromPixel(r, g, b) {
+  // 노란기(웜) vs 붉은/푸른기(쿨) 근사 추정
+  const yellowness = (g - b) / 255;
+  const pinkness = (r - g) / 255;
+  const warmRaw = yellowness - pinkness * 0.5;
+  const warm = warmRaw > 0.02 ? 1 : (warmRaw < -0.02 ? -1 : 0);
+
+  const max = Math.max(r, g, b), min = Math.min(r, g, b);
+  const lightness = (max + min) / 2 / 255;
+  const light = lightness > 0.62 ? 1 : -1;
+
+  return { warm, light };
+}
+
+// ─── Result rendering ────────────────────────────
+function showResult(seasonKey, axis) {
+  const s = SEASONS[seasonKey];
+  document.getElementById('roughNote').style.display = axis.rough ? 'block' : 'none';
+  document.getElementById('resultBadge').textContent = s.badge;
+  document.getElementById('resultBadge').style.color = s.theme;
+  document.getElementById('resultName').textContent = `${s.name} (${s.en})`;
+  document.getElementById('resultTagline').textContent = s.tagline;
+  document.getElementById('resultDesc').textContent = s.desc;
+
+  document.getElementById('resultStrip').innerHTML = s.best
+    .map(c => `<div style="background:${c.hex}"></div>`).join('');
+
+  const m = axis.maxAxis;
+  const warmPct = ((axis.warmScore + m) / (2 * m)) * 100;
+  const lightPct = ((axis.lightScore + m) / (2 * m)) * 100;
+  document.getElementById('axisBlock').innerHTML = `
+    <div class="axis-row">
+      <span style="width:40px;">쿨</span>
+      <div class="axis-track"><div class="axis-dot" style="left:calc(${clamp(warmPct)}% - 7px); background:${s.theme}"></div></div>
+      <span style="width:40px;text-align:right;">웜</span>
+    </div>
+    <div class="axis-row">
+      <span style="width:40px;">딥</span>
+      <div class="axis-track"><div class="axis-dot" style="left:calc(${clamp(lightPct)}% - 7px); background:${s.theme}"></div></div>
+      <span style="width:40px;text-align:right;">라이트</span>
+    </div>
+  `;
+
+  document.getElementById('bestSwatches').innerHTML = renderSwatches(s.best);
+  document.getElementById('avoidSwatches').innerHTML = renderSwatches(s.avoid);
+  document.getElementById('infoNeutral').textContent = s.neutral;
+  document.getElementById('infoMetal').textContent = s.metal;
+  document.getElementById('infoMakeupLip').textContent = s.lip;
+  document.getElementById('infoMakeupEye').textContent = s.eye;
+
+  switchTab('result');
+}
+
+function clamp(v) { return Math.max(6, Math.min(94, v)); }
+
+function renderSwatches(list) {
+  return list.map(c => `
+    <div class="swatch" onclick="copyHex(this, '${c.hex}')">
+      <div class="swatch-color" style="background:${c.hex}"></div>
+      <div class="swatch-hex">${c.label}</div>
+    </div>
+  `).join('');
+}
+
+function copyHex(el, hex) {
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(hex).catch(() => {});
+  }
+  el.classList.add('copied');
+  setTimeout(() => el.classList.remove('copied'), 1200);
+}
+
+// ─── Tabs ────────────────────────────────────────
+function switchTab(tab) {
+  document.querySelectorAll('.panel-section').forEach(p => p.classList.remove('active'));
+  document.getElementById(`${tab}-panel`).classList.add('active');
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  const btn = document.querySelector(`.tab-btn[data-tab="${tab}"]`);
+  if (btn) btn.classList.add('active');
+}
+
+// ─── Init ────────────────────────────────────────
+renderQuestion();
+</script>
+</body>
+</html>
