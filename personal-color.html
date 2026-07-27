@@ -25,6 +25,7 @@
     min-height: 100vh;
   }
   .page { max-width: 760px; margin: 0 auto; padding: 32px 20px 80px; }
+  button:focus-visible, canvas:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
   /* Hero */
   .hero { text-align: center; margin-bottom: 26px; }
@@ -32,7 +33,7 @@
   .hero h1 span { color: var(--accent); }
   .hero p { color: var(--text2); font-size: 13.5px; margin-top: 8px; line-height: 1.5; }
 
-  .tabs { display: flex; justify-content: center; gap: 8px; margin-top: 20px; }
+  .tabs { display: flex; justify-content: center; gap: 8px; margin-top: 20px; flex-wrap: wrap; }
   .tab-btn {
     border: 1px solid var(--border); background: var(--surface); color: var(--text2);
     font-size: 13px; font-weight: 600; padding: 9px 18px; border-radius: 20px; cursor: pointer;
@@ -54,16 +55,20 @@
     background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
     padding: 28px 24px; box-shadow: var(--shadow);
   }
-  .quiz-q { font-size: 16px; font-weight: 700; margin-bottom: 18px; line-height: 1.5; }
-  .quiz-options { display: flex; flex-direction: column; gap: 10px; }
+  .quiz-q { font-size: 16px; font-weight: 700; line-height: 1.5; }
+  .quiz-hint { font-size: 12px; color: var(--text3); margin-top: 6px; line-height: 1.55; }
+  .quiz-options { display: flex; flex-direction: column; gap: 10px; margin-top: 18px; }
   .quiz-opt {
+    display: flex; align-items: center; gap: 11px;
     text-align: left; border: 1.5px solid var(--border); background: var(--surface2);
     border-radius: 12px; padding: 13px 16px; font-size: 13.5px; color: var(--text); cursor: pointer;
-    transition: all .15s;
+    transition: all .15s; line-height: 1.45; width: 100%;
   }
   .quiz-opt:hover { border-color: var(--accent); }
   .quiz-opt.selected { border-color: var(--accent); background: #fdece5; font-weight: 700; color: var(--accent); }
-  .quiz-nav { display: flex; justify-content: space-between; margin-top: 22px; }
+  .opt-chips { display: flex; flex-shrink: 0; border-radius: 6px; overflow: hidden; border: 1px solid rgba(0,0,0,.08); }
+  .opt-chips i { display: block; width: 15px; height: 26px; }
+  .quiz-nav { display: flex; justify-content: space-between; align-items: center; margin-top: 22px; }
   .nav-btn {
     border: none; background: transparent; color: var(--text2); font-size: 13px; font-weight: 600;
     cursor: pointer; padding: 8px 6px;
@@ -72,6 +77,20 @@
   .nav-btn.primary { color: var(--accent); }
 
   /* Photo panel */
+  .step-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
+  .step {
+    display: flex; align-items: flex-start; gap: 10px; background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; padding: 12px 14px; font-size: 12.5px; color: var(--text2); line-height: 1.55;
+  }
+  .step.active { border-color: var(--accent); }
+  .step.done { opacity: .55; }
+  .step-num {
+    flex-shrink: 0; width: 20px; height: 20px; border-radius: 50%; background: var(--surface2); color: var(--text3);
+    font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center;
+  }
+  .step.active .step-num { background: var(--accent); color: #fff; }
+  .step b { color: var(--text); }
+
   .upload-box {
     border: 2px dashed var(--border); border-radius: var(--radius); background: var(--surface);
     padding: 30px 20px; text-align: center; cursor: pointer; transition: border-color .15s;
@@ -81,50 +100,74 @@
   .upload-hint { font-size: 12px; color: var(--text3); margin-top: 6px; line-height: 1.5; }
   .canvas-wrap { text-align: center; margin-top: 16px; }
   #photoCanvas { max-width: 100%; border-radius: 12px; cursor: crosshair; box-shadow: var(--shadow); }
-  .photo-instruction {
-    font-size: 12.5px; color: var(--text2); text-align: center; margin: 10px 0 4px; line-height: 1.5;
+  .photo-instruction { font-size: 13px; color: var(--text); text-align: center; margin: 4px 0 10px; line-height: 1.55; font-weight: 600; }
+  .photo-instruction em { color: var(--accent); font-style: normal; }
+
+  .picked-row { display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+  .picked-chip {
+    display: flex; align-items: center; gap: 7px; background: var(--surface); border: 1px solid var(--border);
+    border-radius: 20px; padding: 5px 12px 5px 6px; font-size: 11.5px; color: var(--text2); font-weight: 600;
   }
-  .sample-readout {
-    display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 12px; font-size: 13px; color: var(--text2);
-  }
-  .sample-swatch { width: 28px; height: 28px; border-radius: 8px; border: 1px solid var(--border); }
+  .picked-sw { width: 20px; height: 20px; border-radius: 50%; border: 1px solid var(--border); }
+  .photo-actions { display: flex; justify-content: center; gap: 8px; margin-top: 16px; flex-wrap: wrap; }
   .photo-disclaimer {
-    font-size: 11.5px; color: var(--text3); text-align: center; margin-top: 16px; line-height: 1.6;
+    font-size: 11.5px; color: var(--text3); text-align: center; margin-top: 18px; line-height: 1.6;
     border-top: 1px dashed var(--border); padding-top: 12px;
   }
 
   /* Result */
-  .result-head { text-align: center; margin-bottom: 22px; }
+  .result-head { text-align: center; margin-bottom: 20px; }
   .result-badge {
     display: inline-block; font-size: 12px; font-weight: 700; padding: 5px 14px; border-radius: 20px;
-    background: var(--surface2); color: var(--text2); margin-bottom: 10px;
+    background: var(--surface2); margin-bottom: 10px;
   }
   .result-name { font-size: 28px; font-weight: 800; }
   .result-tagline { font-size: 13.5px; color: var(--text2); margin-top: 6px; }
+  .conf-chip {
+    display: inline-block; margin-top: 12px; font-size: 11.5px; font-weight: 700; padding: 5px 13px;
+    border-radius: 20px; border: 1px solid var(--border); color: var(--text2); background: var(--surface);
+  }
   .result-strip { display: flex; height: 14px; border-radius: 8px; overflow: hidden; margin: 18px 0; box-shadow: var(--shadow); }
   .result-strip div { flex: 1; }
 
-  .axis-block { display: flex; flex-direction: column; gap: 10px; margin-bottom: 22px; }
-  .axis-row { display: flex; align-items: center; gap: 10px; font-size: 11.5px; color: var(--text3); }
-  .axis-labels { display: flex; justify-content: space-between; font-size: 11px; color: var(--text3); width: 100%; }
-  .axis-track { position: relative; height: 8px; background: var(--surface2); border-radius: 6px; flex: 1; }
-  .axis-dot { position: absolute; top: -3px; width: 14px; height: 14px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 3px var(--surface); }
-
-  .result-desc {
+  .block-title { font-size: 13px; font-weight: 700; color: var(--text2); margin-bottom: 10px; }
+  .panel-box {
     background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
-    padding: 18px 20px; font-size: 13.5px; line-height: 1.7; color: var(--text); box-shadow: var(--shadow); margin-bottom: 18px;
+    padding: 18px 20px; box-shadow: var(--shadow); margin-bottom: 18px;
   }
 
+  /* Season match bars */
+  .match-row { display: flex; align-items: center; gap: 10px; margin-bottom: 9px; }
+  .match-row:last-child { margin-bottom: 0; }
+  .match-name { width: 78px; flex-shrink: 0; font-size: 12px; color: var(--text2); font-weight: 600; }
+  .match-row.top .match-name { color: var(--text); font-weight: 800; }
+  .match-track { flex: 1; height: 20px; background: var(--surface2); border-radius: 6px; overflow: hidden; }
+  .match-fill { display: block; height: 100%; border-radius: 6px; transition: width .5s ease; }
+  .match-pct { width: 42px; flex-shrink: 0; text-align: right; font-size: 12px; color: var(--text2); font-weight: 700; font-variant-numeric: tabular-nums; }
+
+  /* Axis bars */
+  .axis-row { display: flex; align-items: center; gap: 10px; font-size: 11.5px; color: var(--text3); margin-bottom: 12px; }
+  .axis-row:last-child { margin-bottom: 0; }
+  .axis-end { width: 52px; flex-shrink: 0; }
+  .axis-end.r { text-align: right; }
+  .axis-track { position: relative; height: 8px; background: var(--surface2); border-radius: 6px; flex: 1; }
+  .axis-track::before { content: ''; position: absolute; left: 50%; top: -3px; bottom: -3px; width: 1px; background: var(--border); }
+  .axis-dot { position: absolute; top: -4px; width: 16px; height: 16px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 3px var(--surface); transition: left .5s ease; }
+  .axis-dot.unknown { background: var(--surface2); border: 1.5px dashed var(--text3); }
+
+  .result-desc { font-size: 13.5px; line-height: 1.75; color: var(--text); }
+  .note-line { font-size: 12.5px; line-height: 1.7; color: var(--text2); margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--border); }
+  .note-line b { color: var(--accent); }
+
   .swatch-section { margin-bottom: 20px; }
-  .swatch-title { font-size: 13px; font-weight: 700; color: var(--text2); margin-bottom: 10px; }
   .swatch-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
   @media (max-width: 560px) { .swatch-grid { grid-template-columns: repeat(3, 1fr); } }
   .swatch {
-    border-radius: 12px; overflow: hidden; border: 1px solid var(--border); cursor: pointer; position: relative;
-    box-shadow: var(--shadow); background: var(--surface);
+    border-radius: 12px; overflow: hidden; border: 1px solid var(--border); cursor: pointer;
+    box-shadow: var(--shadow); background: var(--surface); width: 100%; padding: 0;
   }
-  .swatch-color { height: 56px; }
-  .swatch-hex { font-size: 10.5px; text-align: center; padding: 5px 0; color: var(--text2); font-weight: 600; }
+  .swatch-color { display: block; height: 56px; }
+  .swatch-hex { display: block; font-size: 10.5px; text-align: center; padding: 5px 2px; color: var(--text2); font-weight: 600; }
   .swatch.copied .swatch-hex { color: var(--accent); }
   .swatch.copied .swatch-hex::after { content: ' 복사됨'; }
 
@@ -137,16 +180,17 @@
   .info-label { font-size: 11px; color: var(--text3); font-weight: 700; margin-bottom: 4px; letter-spacing: .2px; }
   .info-value { font-size: 13px; color: var(--text); line-height: 1.6; }
 
-  .result-actions { display: flex; justify-content: center; gap: 10px; margin-top: 24px; }
+  .result-actions { display: flex; justify-content: center; gap: 10px; margin-top: 24px; flex-wrap: wrap; }
   .action-btn {
     border: 1px solid var(--border); background: var(--surface); color: var(--text2); font-size: 13px;
     font-weight: 600; padding: 10px 18px; border-radius: 20px; cursor: pointer;
   }
   .action-btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .action-btn:disabled { opacity: .4; cursor: default; }
 
-  .rough-note {
+  .src-note {
     font-size: 12px; color: var(--accent); background: #fdece5; border-radius: 10px; padding: 10px 14px;
-    text-align: center; margin-bottom: 16px;
+    text-align: center; margin-bottom: 16px; line-height: 1.55;
   }
 </style>
 </head>
@@ -155,7 +199,7 @@
 
   <div class="hero">
     <h1>퍼스널 <span>컬러</span> 진단</h1>
-    <p>몇 가지 질문에 답하면 나에게 어울리는 웜/쿨 톤과<br>추천 컬러 팔레트를 알려드려요.</p>
+    <p>웜/쿨 · 명도 · 채도 세 가지 축으로 나누어<br>사계절 타입과 어울리는 컬러 팔레트를 찾아드려요.</p>
     <div class="tabs">
       <button class="tab-btn active" data-tab="quiz" onclick="switchTab('quiz')">퀴즈로 진단</button>
       <button class="tab-btn" data-tab="photo" onclick="switchTab('photo')">사진으로 참고 진단</button>
@@ -164,10 +208,11 @@
 
   <!-- QUIZ -->
   <section id="quiz-panel" class="panel-section active">
-    <div class="progress-label" id="progressLabel">질문 1 / 8</div>
+    <div class="progress-label" id="progressLabel"></div>
     <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
     <div class="quiz-card">
       <div class="quiz-q" id="quizQ"></div>
+      <div class="quiz-hint" id="quizHint"></div>
       <div class="quiz-options" id="quizOptions"></div>
       <div class="quiz-nav">
         <button class="nav-btn" id="prevBtn" onclick="prevQuestion()">이전</button>
@@ -178,46 +223,70 @@
 
   <!-- PHOTO -->
   <section id="photo-panel" class="panel-section">
+    <div class="step-list">
+      <div class="step" id="step1"><span class="step-num">1</span><span>사진 올리기 — <b>자연광, 화장기 없는 정면 사진</b>일수록 정확해요.</span></div>
+      <div class="step" id="step2"><span class="step-num">2</span><span>흰색 기준점 클릭 — <b>흰 옷·흰 벽·눈 흰자</b> 등 원래 흰색인 곳을 찍으면 조명 색을 보정해요. <i>(생략 가능하지만 권장)</i></span></div>
+      <div class="step" id="step3"><span class="step-num">3</span><span>맨 피부 <b>2~3곳</b> 클릭 — 이마·양 볼처럼 화장과 그림자가 없는 곳이 좋아요.</span></div>
+    </div>
+
     <div class="upload-box" id="uploadBox" onclick="document.getElementById('photoInput').click()">
       <div style="font-size:28px;margin-bottom:8px;">📷</div>
       <div style="font-weight:700;font-size:14px;">사진을 선택해주세요</div>
-      <div class="upload-hint">자연광 아래에서 찍은, 화장기 없는 정면 사진일수록<br>더 참고할 만한 결과가 나와요.</div>
+      <div class="upload-hint">사진은 서버로 전송되지 않고<br>브라우저 안에서만 처리돼요.</div>
       <input type="file" id="photoInput" accept="image/*" onchange="handlePhoto(event)">
     </div>
+
     <div class="canvas-wrap" id="canvasWrap" style="display:none;">
-      <p class="photo-instruction">뺨이나 이마처럼 <b>화장을 하지 않은 맨 피부</b> 부분을 클릭해주세요.</p>
+      <p class="photo-instruction" id="photoInstruction"></p>
       <canvas id="photoCanvas"></canvas>
-      <div class="sample-readout" id="sampleReadout" style="display:none;">
-        <div class="sample-swatch" id="sampleSwatch"></div>
-        <span id="sampleText"></span>
+      <div class="picked-row" id="pickedRow"></div>
+      <div class="photo-actions">
+        <button class="action-btn" id="skipWhiteBtn" onclick="skipWhiteRef()">흰색 기준점 건너뛰기</button>
+        <button class="action-btn primary" id="analyzeBtn" onclick="analyzePhoto()" disabled>진단하기</button>
+        <button class="action-btn" onclick="resetPhoto()">사진 다시 고르기</button>
       </div>
     </div>
+
     <div class="photo-disclaimer">
-      사진 진단은 조명·화면·카메라 설정에 따라 오차가 클 수 있는 간이 추정이에요.<br>
-      더 정확한 결과가 필요하다면 퀴즈 진단을 함께 활용해보세요. 업로드한 사진은 서버로 전송되지 않고 브라우저 안에서만 처리돼요.
+      사진 진단은 조명·카메라·화면에 따라 오차가 큰 <b>참고용 간이 추정</b>이에요.<br>
+      특히 채도(선명함/부드러움) 축은 사진만으로는 판단할 수 없어서 웜/쿨과 명도만 추정합니다.<br>
+      정확한 결과를 원하면 퀴즈 진단을 함께 해주세요.
     </div>
   </section>
 
   <!-- RESULT -->
   <section id="result-panel" class="panel-section">
-    <div id="roughNote" class="rough-note" style="display:none;">📷 사진 기반 간이 추정 결과예요. 정확도를 높이려면 퀴즈 진단도 함께 해보세요.</div>
+    <div id="srcNote" class="src-note" style="display:none;"></div>
+
     <div class="result-head">
       <div class="result-badge" id="resultBadge"></div>
       <div class="result-name" id="resultName"></div>
       <div class="result-tagline" id="resultTagline"></div>
+      <div><span class="conf-chip" id="confChip"></span></div>
     </div>
     <div class="result-strip" id="resultStrip"></div>
 
-    <div class="axis-block" id="axisBlock"></div>
+    <div class="panel-box">
+      <div class="block-title">사계절 적합도</div>
+      <div id="matchBars"></div>
+    </div>
 
-    <div class="result-desc" id="resultDesc"></div>
+    <div class="panel-box">
+      <div class="block-title">진단 축</div>
+      <div id="axisBlock"></div>
+    </div>
+
+    <div class="panel-box">
+      <div class="result-desc" id="resultDesc"></div>
+      <div class="note-line" id="noteLine" style="display:none;"></div>
+    </div>
 
     <div class="swatch-section">
-      <div class="swatch-title">✨ 추천 컬러</div>
+      <div class="block-title">✨ 추천 컬러</div>
       <div class="swatch-grid" id="bestSwatches"></div>
     </div>
     <div class="swatch-section">
-      <div class="swatch-title">🚫 피하면 좋은 컬러</div>
+      <div class="block-title">🚫 피하면 좋은 컬러</div>
       <div class="swatch-grid" id="avoidSwatches"></div>
     </div>
 
@@ -230,65 +299,143 @@
 
     <div class="result-actions">
       <button class="action-btn" onclick="switchTab('quiz'); resetQuiz();">퀴즈 다시하기</button>
-      <button class="action-btn primary" onclick="switchTab('photo');">사진으로도 확인하기</button>
+      <button class="action-btn" onclick="switchTab('photo');">사진으로도 확인하기</button>
+      <button class="action-btn primary" id="combineBtn" onclick="showCombined()" style="display:none;">퀴즈+사진 종합 결과</button>
     </div>
   </section>
 
 </div>
 
 <script>
-// ─── Data ────────────────────────────────────────
+// ─────────────────────────────────────────────────
+// 진단 모델
+//   w = 웜(+) / 쿨(-)      : 색상(hue)
+//   v = 라이트(+) / 딥(-)  : 명도(value)
+//   c = 선명(+) / 부드러움(-) : 채도(chroma)
+//
+//   봄 웜  = 웜 + 라이트 + 선명
+//   여름 쿨 = 쿨 + 라이트 + 부드러움
+//   가을 웜 = 웜 + 딥     + 부드러움
+//   겨울 쿨 = 쿨 + 딥     + 선명
+// ─────────────────────────────────────────────────
+
 const QUESTIONS = [
-  { q: '손목 안쪽 혈관 색깔을 보면?', options: [
-    { label: '초록빛이 돈다', warm: 1, light: 0 },
-    { label: '파란빛/보랏빛이 돈다', warm: -1, light: 0 },
-    { label: '잘 모르겠다, 색이 섞여 있다', warm: 0, light: 0 },
-  ]},
-  { q: '강한 햇볕 아래에서 피부는 보통?', options: [
-    { label: '잘 그을리고, 화상은 잘 안 생긴다', warm: 1, light: 0 },
-    { label: '쉽게 빨개지고 화상을 입기 쉽다', warm: -1, light: 0 },
-    { label: '잘 타지도, 잘 빨개지지도 않는다', warm: 0, light: 0 },
-  ]},
-  { q: '잘 어울린다는 얘기를 자주 들은 액세서리는?', options: [
-    { label: '골드', warm: 1, light: 0 },
-    { label: '실버', warm: -1, light: 0 },
-    { label: '뭘 해도 무난하다', warm: 0, light: 0 },
-  ]},
-  { q: '화장을 하지 않았을 때 얼굴빛은?', options: [
-    { label: '노르스름하다 / 올리브빛이다', warm: 1, light: 0 },
-    { label: '핑크빛 / 붉은 기가 있다', warm: -1, light: 0 },
-    { label: '거의 무색에 가깝다', warm: 0, light: 0 },
-  ]},
-  { q: '타고난 눈동자 색은?', options: [
-    { label: '밝은 갈색 / 호박색', warm: 1, light: 1 },
-    { label: '짙은 흑갈색 / 블랙', warm: 0, light: -1 },
-    { label: '회갈색 / 차가운 브라운', warm: -1, light: 0 },
-  ]},
-  { q: '타고난 모발 색은?', options: [
-    { label: '라이트 브라운 / 골드 브라운', warm: 1, light: 1 },
-    { label: '다크 브라운 / 블랙', warm: 0, light: -1 },
-    { label: '애쉬 브라운 / 애쉬 블랙', warm: -1, light: 0 },
-  ]},
-  { q: '아래 색 조합 중 얼굴이 가장 화사해 보이는 쪽은?', options: [
-    { label: '아이보리 + 코랄', warm: 1, light: 1 },
-    { label: '화이트 + 로얄블루', warm: -1, light: -1 },
-    { label: '카멜 + 브라운', warm: 1, light: -1 },
-    { label: '그레이 + 라벤더', warm: -1, light: 1 },
-  ]},
-  { q: '가장 잘 받는다는 얘기를 들었던 색조 화장은?', options: [
-    { label: '오렌지 / 코랄 계열', warm: 1, light: 1 },
-    { label: '브라운 / 테라코타 계열', warm: 1, light: -1 },
-    { label: '은은한 핑크 / 로즈 계열', warm: -1, light: 1 },
-    { label: '선명한 와인 / 블루레드 계열', warm: -1, light: -1 },
-  ]},
+  {
+    q: '밝은 곳에서 손목 안쪽 혈관은 무슨 색으로 보이나요?',
+    hint: '자연광에서 보는 게 가장 정확해요.',
+    options: [
+      { label: '초록빛 / 올리브빛으로 보인다', w: 2 },
+      { label: '파란빛 / 보랏빛으로 보인다', w: -2 },
+      { label: '초록과 파랑이 섞여 보인다', w: 0 },
+    ],
+  },
+  {
+    q: '골드와 실버 액세서리 중 얼굴이 더 살아 보이는 쪽은?',
+    hint: '얼굴 가까이 대보고 안색이 환해지는 쪽을 골라주세요.',
+    options: [
+      { label: '골드 — 피부가 화사해 보인다', w: 2 },
+      { label: '실버 — 피부가 맑아 보인다', w: -2 },
+      { label: '둘 다 비슷하게 어울린다', w: 0 },
+    ],
+  },
+  {
+    q: '흰옷을 입을 때, 어느 쪽이 더 잘 어울리나요?',
+    hint: '웜/쿨을 가르는 대표적인 드레이핑 테스트예요.',
+    options: [
+      { label: '아이보리 · 크림 화이트가 낫다', w: 2, chips: ['#F6EEDC', '#EFE3C8'] },
+      { label: '형광빛 도는 순백 화이트가 낫다', w: -2, chips: ['#FFFFFF', '#F2F6FA'] },
+      { label: '차이를 모르겠다', w: 0 },
+    ],
+  },
+  {
+    q: '본인 피부에 잘 맞았던 파운데이션·쿠션 색은?',
+    hint: '얼굴에 발랐을 때 겉돌지 않고 자연스럽게 묻어난 쪽이요.',
+    options: [
+      { label: '노란기가 도는 웜 베이스 (21W, 옐로우 계열)', w: 2 },
+      { label: '핑크빛이 도는 쿨 베이스 (21C, 로즈 계열)', w: -2 },
+      { label: '뉴트럴 / 잘 모르겠다', w: 0 },
+    ],
+  },
+  {
+    q: '햇볕을 오래 쬐면 피부가 어떻게 되나요?',
+    options: [
+      { label: '금방 갈색으로 그을리고 화상은 잘 안 생긴다', w: 1, v: -1 },
+      { label: '쉽게 빨개지고 따갑고, 잘 안 그을린다', w: -1, v: 1 },
+      { label: '살짝 붉어졌다가 서서히 그을린다', w: 0, v: 0 },
+    ],
+  },
+  {
+    q: '새까만 블랙이나 짙은 네이비 옷을 입으면?',
+    hint: '명도 축을 가르는 핵심 문항이에요.',
+    options: [
+      { label: '이목구비가 또렷해지고 시크해 보인다', v: -2, c: 1 },
+      { label: '얼굴이 눌리고 그늘져 칙칙해 보인다', v: 2, c: -1 },
+      { label: '특별한 변화가 없다', v: 0, c: 0 },
+    ],
+  },
+  {
+    q: '밝은 파스텔톤 옷을 입으면?',
+    options: [
+      { label: '얼굴이 화사하고 부드러워 보인다', v: 2 },
+      { label: '얼굴이 붕 뜨고 흐릿해 보인다', v: -2 },
+      { label: '무난하다', v: 0 },
+    ],
+  },
+  {
+    q: '머리색은 어느 쪽이 더 잘 어울린다는 말을 듣나요?',
+    hint: '검은 머리가 "기본"이라서가 아니라, 실제로 더 어울렸던 쪽으로요.',
+    options: [
+      { label: '밝은 갈색 · 애쉬 브라운 등 밝게 염색했을 때', v: 2 },
+      { label: '새까만 흑발일 때 제일 낫다', v: -2 },
+      { label: '둘 다 무난하다', v: 0 },
+    ],
+  },
+  {
+    q: '채도 높은 선명한 원색(쨍한 빨강, 코발트블루) 옷을 입으면?',
+    hint: '채도 축을 가르는 핵심 문항이에요.',
+    options: [
+      { label: '옷에 안 지고 오히려 얼굴이 또렷해진다', c: 2 },
+      { label: '옷 색만 튀고 얼굴이 묻힌다', c: -2 },
+      { label: '무난하다', c: 0 },
+    ],
+  },
+  {
+    q: '뿌옇고 탁한 색(더스티 핑크, 그레이시 블루)을 입으면?',
+    options: [
+      { label: '차분하고 세련되어 보인다', c: -2 },
+      { label: '얼굴이 칙칙하고 피곤해 보인다', c: 2 },
+      { label: '무난하다', c: 0 },
+    ],
+  },
+  {
+    q: '아래 색 조합 중 얼굴이 가장 화사해 보이는 쪽은?',
+    hint: '실제 진단소에서 천을 대보는 드레이핑과 같은 문항이에요.',
+    options: [
+      { label: '아이보리 + 코랄 + 라이트 카멜', w: 2, v: 2, c: 2, chips: ['#FFF3B0', '#F4A261', '#E9C46A'] },
+      { label: '라벤더 + 로즈핑크 + 스카이블루', w: -2, v: 2, c: -2, chips: ['#C8A2C8', '#F7CAD0', '#C6DCE8'] },
+      { label: '카멜 + 머스타드 + 올리브', w: 2, v: -2, c: -2, chips: ['#B5651D', '#C08552', '#6B8E23'] },
+      { label: '블랙 + 순백 + 로얄블루', w: -2, v: -2, c: 2, chips: ['#000000', '#FFFFFF', '#0F52BA'] },
+      { label: '차이를 잘 모르겠다', w: 0, v: 0, c: 0 },
+    ],
+  },
+  {
+    q: '립을 발랐을 때 "잘 받는다"는 말을 가장 많이 들은 색은?',
+    options: [
+      { label: '코랄 · 살구 · 오렌지 계열', w: 2, v: 2, c: 2, chips: ['#F4A261', '#FFB6A3'] },
+      { label: '로즈 · 모브 · 연분홍 계열', w: -2, v: 2, c: -2, chips: ['#E8B4BC', '#C8A2C8'] },
+      { label: '브릭 · 테라코타 · 갈맛 레드', w: 2, v: -2, c: -2, chips: ['#A0522D', '#D2691E'] },
+      { label: '와인 · 자주 · 블루레드 계열', w: -2, v: -2, c: 2, chips: ['#722F37', '#7B2D8E'] },
+      { label: '들어본 적 없다 / 잘 모르겠다', w: 0, v: 0, c: 0 },
+    ],
+  },
 ];
 
 const SEASONS = {
   springWarm: {
-    name: '봄 웜톤', en: 'Spring Warm', badge: '🌷 SPRING WARM',
-    tagline: '화사하고 생기 넘치는, 웜 · 라이트',
+    name: '봄 웜톤', en: 'Spring Warm', short: '봄 웜', badge: '🌷 SPRING WARM',
+    tagline: '화사하고 생기 넘치는 · 웜 / 라이트 / 선명',
     theme: '#F4A261',
-    desc: '노란빛이 도는 화사한 피부 베이스를 가지고 있어요. 밝고 맑은 색, 생기 있는 컬러를 걸치면 얼굴빛이 환해지고 생동감이 살아나요. 반대로 어둡고 탁한 색이나 차가운 회색 계열은 안색을 칙칙해 보이게 할 수 있어요.',
+    desc: '노란빛이 도는 밝고 맑은 피부 베이스예요. 채도가 높고 밝은 색을 걸치면 얼굴에 혈색이 돌면서 생기 있어 보여요. 반대로 어둡거나 탁한 색, 차가운 회색 계열은 안색을 눌러 칙칙해 보이게 만들 수 있어요.',
     best: [
       { hex: '#F4A261', label: '코랄 오렌지' }, { hex: '#FFD972', label: '옐로우' },
       { hex: '#FFB6A3', label: '살몬핑크' }, { hex: '#8ED081', label: '라이트 그린' },
@@ -305,10 +452,10 @@ const SEASONS = {
     eye: '브라운골드, 피치, 라이트 카키',
   },
   summerCool: {
-    name: '여름 쿨톤', en: 'Summer Cool', badge: '💧 SUMMER COOL',
-    tagline: '부드럽고 우아한, 쿨 · 라이트',
+    name: '여름 쿨톤', en: 'Summer Cool', short: '여름 쿨', badge: '💧 SUMMER COOL',
+    tagline: '부드럽고 우아한 · 쿨 / 라이트 / 부드러움',
     theme: '#9BB8CD',
-    desc: '푸른빛이 도는 부드러운 피부 베이스를 가지고 있어요. 파스텔톤, 뿌옇고 은은한 색이 우아하고 청순한 분위기를 살려줘요. 반대로 강렬한 오렌지나 머스타드 계열은 얼굴과 따로 노는 느낌을 줄 수 있어요.',
+    desc: '푸른빛이 도는 밝고 부드러운 피부 베이스예요. 채도를 한 톤 낮춘 파스텔·뿌연 색이 우아하고 청초한 분위기를 살려줘요. 반대로 쨍한 원색이나 진한 오렌지·머스타드는 얼굴과 따로 놀며 부담스러워 보일 수 있어요.',
     best: [
       { hex: '#A9C9E2', label: '파우더 블루' }, { hex: '#C8A2C8', label: '라벤더' },
       { hex: '#F7CAD0', label: '로즈 핑크' }, { hex: '#B8B8D1', label: '소프트 퍼플' },
@@ -317,18 +464,18 @@ const SEASONS = {
     ],
     avoid: [
       { hex: '#D2691E', label: '오렌지' }, { hex: '#C08552', label: '머스타드' },
-      { hex: '#7B3F00', label: '브라운' }, { hex: '#808000', label: '카키' },
+      { hex: '#7B3F00', label: '브라운' }, { hex: '#000000', label: '쨍한 블랙' },
     ],
-    neutral: '그레이, 화이트, 소프트 네이비',
+    neutral: '소프트 그레이, 오프 화이트, 소프트 네이비',
     metal: '실버 · 화이트골드',
     lip: '로즈, 베리핑크, 모브',
     eye: '그레이, 라벤더, 로즈브라운',
   },
   autumnWarm: {
-    name: '가을 웜톤', en: 'Autumn Warm', badge: '🍂 AUTUMN WARM',
-    tagline: '깊고 차분한, 웜 · 딥',
+    name: '가을 웜톤', en: 'Autumn Warm', short: '가을 웜', badge: '🍂 AUTUMN WARM',
+    tagline: '깊고 그윽한 · 웜 / 딥 / 부드러움',
     theme: '#B5651D',
-    desc: '노란빛이 도는 깊고 차분한 피부 베이스를 가지고 있어요. 카멜, 브라운, 올리브처럼 짙고 그윽한 색이 세련되고 안정감 있는 분위기를 만들어줘요. 반대로 파스텔톤이나 새하얀 화이트는 얼굴이 붕 뜨는 느낌을 줄 수 있어요.',
+    desc: '노란빛이 도는 깊고 차분한 피부 베이스예요. 카멜·브라운·올리브처럼 채도를 낮춘 짙은 색이 안정감 있고 고급스러운 분위기를 만들어줘요. 반대로 파스텔톤이나 형광빛 도는 순백은 얼굴이 붕 뜨고 창백해 보일 수 있어요.',
     best: [
       { hex: '#B5651D', label: '카멜' }, { hex: '#C08552', label: '머스타드 베이지' },
       { hex: '#8A6D3B', label: '올리브 브라운' }, { hex: '#6B8E23', label: '올리브 그린' },
@@ -337,7 +484,7 @@ const SEASONS = {
     ],
     avoid: [
       { hex: '#F7CAD0', label: '파스텔 핑크' }, { hex: '#DDE6ED', label: '아이스 그레이' },
-      { hex: '#FFFFFF', label: '새하얀 화이트' }, { hex: '#B8B8D1', label: '연보라' },
+      { hex: '#FFFFFF', label: '순백 화이트' }, { hex: '#B8B8D1', label: '연보라' },
     ],
     neutral: '브라운, 카키, 아이보리',
     metal: '골드 · 브론즈',
@@ -345,12 +492,12 @@ const SEASONS = {
     eye: '카키, 브라운, 골드 샴페인',
   },
   winterCool: {
-    name: '겨울 쿨톤', en: 'Winter Cool', badge: '❄️ WINTER COOL',
-    tagline: '선명하고 강렬한, 쿨 · 딥',
+    name: '겨울 쿨톤', en: 'Winter Cool', short: '겨울 쿨', badge: '❄️ WINTER COOL',
+    tagline: '선명하고 강렬한 · 쿨 / 딥 / 선명',
     theme: '#4B0082',
-    desc: '푸른빛이 도는 뚜렷하고 선명한 피부 베이스를 가지고 있어요. 블랙, 화이트처럼 명암 대비가 강한 색이나 채도 높은 원색이 시크하고 강렬한 인상을 살려줘요. 반대로 오렌지, 베이지, 카키 같은 웜톤 컬러는 얼굴빛을 흐리게 만들 수 있어요.',
+    desc: '푸른빛이 도는 뚜렷하고 대비가 강한 피부 베이스예요. 블랙·화이트처럼 명암 대비가 큰 색이나 채도 높은 원색이 시크하고 또렷한 인상을 살려줘요. 반대로 오렌지·베이지·카키 같은 탁한 웜 컬러는 얼굴빛을 흐리게 만들 수 있어요.',
     best: [
-      { hex: '#000000', label: '블랙' }, { hex: '#FFFFFF', label: '화이트' },
+      { hex: '#000000', label: '블랙' }, { hex: '#FFFFFF', label: '순백 화이트' },
       { hex: '#7B2D8E', label: '푸시아' }, { hex: '#0F52BA', label: '로얄 블루' },
       { hex: '#046A38', label: '에메랄드' }, { hex: '#722F37', label: '와인' },
       { hex: '#4B0082', label: '딥퍼플' }, { hex: '#B0E0E6', label: '아이스 블루' },
@@ -359,27 +506,93 @@ const SEASONS = {
       { hex: '#D2691E', label: '오렌지' }, { hex: '#DEB887', label: '베이지' },
       { hex: '#C08552', label: '머스타드' }, { hex: '#808000', label: '카키' },
     ],
-    neutral: '블랙, 화이트, 차콜',
+    neutral: '블랙, 순백 화이트, 차콜',
     metal: '실버 · 화이트골드',
     lip: '블루레드, 와인, 푸시아',
     eye: '블랙, 차콜, 퍼플',
   },
 };
 
-// ─── Quiz state ──────────────────────────────────
+const SEASON_KEYS = ['springWarm', 'summerCool', 'autumnWarm', 'winterCool'];
+
+// ─── 채점 ────────────────────────────────────────
+function scoreAxes(ans) {
+  let w = 0, v = 0, c = 0, maxW = 0, maxV = 0, maxC = 0, neutralPicks = 0;
+  QUESTIONS.forEach((q, i) => {
+    maxW += Math.max(...q.options.map(o => Math.abs(o.w || 0)));
+    maxV += Math.max(...q.options.map(o => Math.abs(o.v || 0)));
+    maxC += Math.max(...q.options.map(o => Math.abs(o.c || 0)));
+    const a = ans[i];
+    if (a === null || a === undefined) return;
+    const o = q.options[a];
+    w += o.w || 0; v += o.v || 0; c += o.c || 0;
+    if (!(o.w || o.v || o.c)) neutralPicks++;
+  });
+  return {
+    w: w / (maxW || 1),
+    v: v / (maxV || 1),
+    c: c / (maxC || 1),
+    neutralPicks,
+    known: { w: true, v: true, c: true },
+  };
+}
+
+// 각 계절 점수. 색상(웜/쿨)이 계절 계열을 가르므로 가중치 2배.
+function seasonScores({ w, v, c }) {
+  const W = 2 * w;
+  return {
+    springWarm:  W + v + c,
+    summerCool: -W + v - c,
+    autumnWarm:  W - v - c,
+    winterCool: -W - v + c,
+  };
+}
+
+function rankSeasons(axes) {
+  const raw = seasonScores(axes);
+  return SEASON_KEYS
+    .map(k => ({ key: k, score: raw[k], pct: Math.round(((raw[k] + 4) / 8) * 100) }))
+    .sort((a, b) => b.score - a.score);
+}
+
+// 신뢰도는 1·2위 격차(margin)뿐 아니라 답변에 실제 신호가 얼마나 있는지(strength)도 함께 본다.
+// 전부 "잘 모르겠다"로 답하면 격차가 있어도 근거가 없으므로 신뢰도를 낮게 잡는다.
+function confidenceOf(ranked, axes) {
+  const margin = ranked[0].score - ranked[1].score;
+  const strength = (2 * Math.abs(axes.w) + Math.abs(axes.v) + Math.abs(axes.c)) / 4;
+  if (strength < 0.25) {
+    return { level: '낮음', margin, strength, weak: true, text: '판단 근거가 약해요 — 답변이 대부분 중립이에요' };
+  }
+  if (margin >= 1.6 && strength >= 0.45) {
+    return { level: '높음', margin, strength, text: '진단 신뢰도 높음 — 한 타입으로 뚜렷하게 모여요' };
+  }
+  if (margin >= 0.7) {
+    return { level: '보통', margin, strength, text: '진단 신뢰도 보통 — 대체로 한 타입에 가까워요' };
+  }
+  return { level: '낮음', margin, strength, text: '진단 신뢰도 낮음 — 두 타입 경계에 있어요' };
+}
+
+// ─── 퀴즈 진행 ───────────────────────────────────
 let qIndex = 0;
 let answers = new Array(QUESTIONS.length).fill(null);
+let quizAxes = null;
+let photoAxes = null;
 
 function renderQuestion() {
   const item = QUESTIONS[qIndex];
   document.getElementById('quizQ').textContent = item.q;
+  const hintEl = document.getElementById('quizHint');
+  hintEl.textContent = item.hint || '';
+  hintEl.style.display = item.hint ? 'block' : 'none';
   document.getElementById('progressLabel').textContent = `질문 ${qIndex + 1} / ${QUESTIONS.length}`;
-  document.getElementById('progressFill').style.width = `${((qIndex) / QUESTIONS.length) * 100}%`;
+  document.getElementById('progressFill').style.width = `${(qIndex / QUESTIONS.length) * 100}%`;
 
-  const optsWrap = document.getElementById('quizOptions');
-  optsWrap.innerHTML = item.options.map((opt, i) => `
-    <button class="quiz-opt ${answers[qIndex] === i ? 'selected' : ''}" onclick="selectOption(${i})">${opt.label}</button>
-  `).join('');
+  document.getElementById('quizOptions').innerHTML = item.options.map((opt, i) => {
+    const chips = opt.chips
+      ? `<span class="opt-chips">${opt.chips.map(h => `<i style="background:${h}"></i>`).join('')}</span>`
+      : '';
+    return `<button class="quiz-opt ${answers[qIndex] === i ? 'selected' : ''}" onclick="selectOption(${i})">${chips}<span>${opt.label}</span></button>`;
+  }).join('');
 
   document.getElementById('prevBtn').disabled = qIndex === 0;
   const nextBtn = document.getElementById('nextBtn');
@@ -395,7 +608,9 @@ function selectOption(i) {
 function nextQuestion() {
   if (answers[qIndex] === null) return;
   if (qIndex === QUESTIONS.length - 1) {
-    computeQuizResult();
+    document.getElementById('progressFill').style.width = '100%';
+    quizAxes = scoreAxes(answers);
+    showResult(quizAxes, 'quiz');
     return;
   }
   qIndex++;
@@ -414,26 +629,11 @@ function resetQuiz() {
   renderQuestion();
 }
 
-function computeQuizResult() {
-  let warmScore = 0, lightScore = 0;
-  QUESTIONS.forEach((item, i) => {
-    const opt = item.options[answers[i]];
-    warmScore += opt.warm;
-    lightScore += opt.light;
-  });
-  document.getElementById('progressFill').style.width = '100%';
-  const seasonKey = pickSeason(warmScore, lightScore);
-  showResult(seasonKey, { warmScore, lightScore, maxAxis: 8, rough: false });
-}
+// ─── 사진 진단 ───────────────────────────────────
+let photoMode = 'white';      // 'white' | 'skin'
+let whiteRef = null;          // {r,g,b}
+let skinSamples = [];         // [{r,g,b}]
 
-function pickSeason(warm, light) {
-  if (warm >= 0 && light >= 0) return 'springWarm';
-  if (warm >= 0 && light < 0) return 'autumnWarm';
-  if (warm < 0 && light >= 0) return 'summerCool';
-  return 'winterCool';
-}
-
-// ─── Photo diagnosis ─────────────────────────────
 function handlePhoto(evt) {
   const file = evt.target.files[0];
   if (!file) return;
@@ -442,111 +642,261 @@ function handlePhoto(evt) {
     const img = new Image();
     img.onload = () => {
       const canvas = document.getElementById('photoCanvas');
-      const maxW = 420;
-      const scale = Math.min(1, maxW / img.width);
-      canvas.width = img.width * scale;
-      canvas.height = img.height * scale;
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      const scale = Math.min(1, 420 / img.width);
+      canvas.width = Math.round(img.width * scale);
+      canvas.height = Math.round(img.height * scale);
+      canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
       document.getElementById('canvasWrap').style.display = 'block';
-      document.getElementById('sampleReadout').style.display = 'none';
+      photoMode = 'white';
+      whiteRef = null;
+      skinSamples = [];
+      renderPhotoState();
     };
     img.src = e.target.result;
   };
   reader.readAsDataURL(file);
 }
 
-document.getElementById('photoCanvas').addEventListener('click', (e) => {
-  const canvas = e.target;
+function resetPhoto() {
+  document.getElementById('photoInput').value = '';
+  document.getElementById('canvasWrap').style.display = 'none';
+  whiteRef = null;
+  skinSamples = [];
+  photoMode = 'white';
+  renderPhotoState();
+}
+
+function skipWhiteRef() {
+  photoMode = 'skin';
+  renderPhotoState();
+}
+
+function renderPhotoState() {
+  const inst = document.getElementById('photoInstruction');
+  const steps = [document.getElementById('step1'), document.getElementById('step2'), document.getElementById('step3')];
+  steps.forEach(s => s.classList.remove('active', 'done'));
+  steps[0].classList.add('done');
+
+  if (photoMode === 'white') {
+    inst.innerHTML = '원래 <em>흰색</em>인 부분을 클릭해주세요 — 흰 옷, 흰 벽, 눈 흰자 등';
+    steps[1].classList.add('active');
+  } else {
+    inst.innerHTML = '<em>맨 피부</em> 2~3곳을 클릭해주세요 — 이마, 양쪽 볼';
+    steps[1].classList.add('done');
+    steps[2].classList.add('active');
+  }
+
+  document.getElementById('skipWhiteBtn').style.display = photoMode === 'white' ? 'inline-block' : 'none';
+  document.getElementById('analyzeBtn').disabled = skinSamples.length === 0;
+
+  const chips = [];
+  if (whiteRef) chips.push(chipHtml(whiteRef, '흰색 기준'));
+  skinSamples.forEach((s, i) => chips.push(chipHtml(s, `피부 ${i + 1}`)));
+  document.getElementById('pickedRow').innerHTML = chips.join('');
+}
+
+function chipHtml(rgb, label) {
+  const hex = rgbToHex(rgb);
+  return `<span class="picked-chip"><span class="picked-sw" style="background:${hex}"></span>${label} ${hex.toUpperCase()}</span>`;
+}
+
+document.getElementById('photoCanvas').addEventListener('click', e => {
+  const canvas = e.currentTarget;
   const rect = canvas.getBoundingClientRect();
   const x = Math.round((e.clientX - rect.left) * (canvas.width / rect.width));
   const y = Math.round((e.clientY - rect.top) * (canvas.height / rect.height));
-  const ctx = canvas.getContext('2d');
-  const [r, g, b] = ctx.getImageData(x, y, 1, 1).data;
+  const rgb = medianPatch(canvas, x, y, 6);
 
-  const hex = '#' + [r, g, b].map(v => v.toString(16).padStart(2, '0')).join('');
-  document.getElementById('sampleSwatch').style.background = hex;
-  document.getElementById('sampleText').textContent = `샘플 색상: ${hex.toUpperCase()}`;
-  document.getElementById('sampleReadout').style.display = 'flex';
-
-  const { warm, light } = estimateFromPixel(r, g, b);
-  const seasonKey = pickSeason(warm, light);
-  showResult(seasonKey, { warmScore: warm, lightScore: light, maxAxis: 1, rough: true });
+  if (photoMode === 'white') {
+    whiteRef = rgb;
+    photoMode = 'skin';
+  } else {
+    if (skinSamples.length >= 3) skinSamples.shift();
+    skinSamples.push(rgb);
+  }
+  renderPhotoState();
 });
 
-function estimateFromPixel(r, g, b) {
-  // 노란기(웜) vs 붉은/푸른기(쿨) 근사 추정
-  const yellowness = (g - b) / 255;
-  const pinkness = (r - g) / 255;
-  const warmRaw = yellowness - pinkness * 0.5;
-  const warm = warmRaw > 0.02 ? 1 : (warmRaw < -0.02 ? -1 : 0);
-
-  const max = Math.max(r, g, b), min = Math.min(r, g, b);
-  const lightness = (max + min) / 2 / 255;
-  const light = lightness > 0.62 ? 1 : -1;
-
-  return { warm, light };
+// 단일 픽셀은 노이즈가 커서 주변 패치의 중앙값을 사용 (머리카락·그림자 섞임 방지)
+function medianPatch(canvas, cx, cy, radius) {
+  const ctx = canvas.getContext('2d');
+  const x0 = Math.max(0, cx - radius), y0 = Math.max(0, cy - radius);
+  const x1 = Math.min(canvas.width, cx + radius + 1), y1 = Math.min(canvas.height, cy + radius + 1);
+  const d = ctx.getImageData(x0, y0, x1 - x0, y1 - y0).data;
+  const rs = [], gs = [], bs = [];
+  for (let i = 0; i < d.length; i += 4) { rs.push(d[i]); gs.push(d[i + 1]); bs.push(d[i + 2]); }
+  const med = arr => { arr.sort((a, b) => a - b); return arr[Math.floor(arr.length / 2)]; };
+  return { r: med(rs), g: med(gs), b: med(bs) };
 }
 
-// ─── Result rendering ────────────────────────────
-function showResult(seasonKey, axis) {
-  const s = SEASONS[seasonKey];
-  document.getElementById('roughNote').style.display = axis.rough ? 'block' : 'none';
-  document.getElementById('resultBadge').textContent = s.badge;
-  document.getElementById('resultBadge').style.color = s.theme;
-  document.getElementById('resultName').textContent = `${s.name} (${s.en})`;
-  document.getElementById('resultTagline').textContent = s.tagline;
-  document.getElementById('resultDesc').textContent = s.desc;
+function rgbToHex({ r, g, b }) {
+  return '#' + [r, g, b].map(v => Math.round(v).toString(16).padStart(2, '0')).join('');
+}
 
-  document.getElementById('resultStrip').innerHTML = s.best
-    .map(c => `<div style="background:${c.hex}"></div>`).join('');
+// 흰색 기준점으로 조명 색 보정 (von Kries 방식)
+function whiteBalance(rgb, ref) {
+  if (!ref) return { ...rgb };
+  const mean = (ref.r + ref.g + ref.b) / 3;
+  const clamp255 = v => Math.max(0, Math.min(255, v));
+  return {
+    r: clamp255(rgb.r * (mean / (ref.r || 1))),
+    g: clamp255(rgb.g * (mean / (ref.g || 1))),
+    b: clamp255(rgb.b * (mean / (ref.b || 1))),
+  };
+}
 
-  const m = axis.maxAxis;
-  const warmPct = ((axis.warmScore + m) / (2 * m)) * 100;
-  const lightPct = ((axis.lightScore + m) / (2 * m)) * 100;
-  document.getElementById('axisBlock').innerHTML = `
+function srgbToLab(r, g, b) {
+  const f = u => { u /= 255; return u <= 0.04045 ? u / 12.92 : Math.pow((u + 0.055) / 1.055, 2.4); };
+  const R = f(r), G = f(g), B = f(b);
+  const X = R * 0.4124564 + G * 0.3575761 + B * 0.1804375;
+  const Y = R * 0.2126729 + G * 0.7151522 + B * 0.0721750;
+  const Z = R * 0.0193339 + G * 0.1191920 + B * 0.9503041;
+  const t = u => u > 0.008856 ? Math.cbrt(u) : (7.787 * u + 16 / 116);
+  const fx = t(X / 0.95047), fy = t(Y / 1.0), fz = t(Z / 1.08883);
+  return { L: 116 * fy - 16, a: 500 * (fx - fy), bb: 200 * (fy - fz) };
+}
+
+function analyzePhoto() {
+  if (!skinSamples.length) return;
+  const balanced = skinSamples.map(s => whiteBalance(s, whiteRef));
+  const avg = balanced.reduce((acc, s) => ({ r: acc.r + s.r / balanced.length, g: acc.g + s.g / balanced.length, b: acc.b + s.b / balanced.length }), { r: 0, g: 0, b: 0 });
+
+  const { L, a, bb } = srgbToLab(avg.r, avg.g, avg.b);
+  const hue = Math.atan2(bb, a) * 180 / Math.PI;   // 쿨 피부 ≈ 30°, 웜 피부 ≈ 70°
+  const clamp1 = x => Math.max(-1, Math.min(1, x));
+
+  photoAxes = {
+    w: clamp1((hue - 52) / 14),
+    v: clamp1((L - 72) / 12),
+    c: 0,
+    known: { w: true, v: true, c: false },   // 채도는 사진으로 판단 불가
+    meta: { hue, L, hex: rgbToHex(avg), balanced: !!whiteRef, samples: skinSamples.length },
+  };
+  showResult(photoAxes, 'photo');
+}
+
+// ─── 종합 ────────────────────────────────────────
+function showCombined() {
+  if (!quizAxes || !photoAxes) return;
+  // 퀴즈가 더 신뢰도 높으므로 7:3, 채도는 퀴즈 값만 사용
+  const mix = (q, p) => q * 0.7 + p * 0.3;
+  showResult({
+    w: mix(quizAxes.w, photoAxes.w),
+    v: mix(quizAxes.v, photoAxes.v),
+    c: quizAxes.c,
+    known: { w: true, v: true, c: true },
+  }, 'combined');
+}
+
+// ─── 결과 표시 ───────────────────────────────────
+function showResult(axes, source) {
+  const ranked = rankSeasons(axes);
+  const top = SEASONS[ranked[0].key];
+  const conf = confidenceOf(ranked, axes);
+
+  const srcNote = document.getElementById('srcNote');
+  if (source === 'photo') {
+    const m = axes.meta || {};
+    srcNote.innerHTML = `📷 사진 기반 <b>간이 추정</b>이에요 (피부 ${m.samples}곳 평균${m.balanced ? ', 조명 보정 적용' : ', 조명 보정 없음'}).<br>채도 축은 사진으로 판단할 수 없어 웜/쿨·명도만 반영했어요.`;
+    srcNote.style.display = 'block';
+  } else if (source === 'combined') {
+    srcNote.innerHTML = '🧩 퀴즈 70% + 사진 30%을 합친 <b>종합 결과</b>예요.';
+    srcNote.style.display = 'block';
+  } else {
+    srcNote.style.display = 'none';
+  }
+
+  document.getElementById('resultBadge').textContent = top.badge;
+  document.getElementById('resultBadge').style.color = top.theme;
+  document.getElementById('resultName').textContent = `${top.name} (${top.en})`;
+  document.getElementById('resultTagline').textContent = top.tagline;
+
+  const chip = document.getElementById('confChip');
+  chip.textContent = conf.text;
+  chip.style.borderColor = conf.level === '낮음' ? 'var(--accent)' : 'var(--border)';
+  chip.style.color = conf.level === '낮음' ? 'var(--accent)' : 'var(--text2)';
+
+  document.getElementById('resultStrip').innerHTML = top.best.map(c => `<div style="background:${c.hex}"></div>`).join('');
+
+  // 사계절 적합도
+  document.getElementById('matchBars').innerHTML = ranked.map((r, i) => {
+    const s = SEASONS[r.key];
+    return `<div class="match-row ${i === 0 ? 'top' : ''}">
+      <span class="match-name">${s.short}</span>
+      <span class="match-track"><span class="match-fill" style="width:${Math.max(2, r.pct)}%;background:${s.theme}"></span></span>
+      <span class="match-pct">${r.pct}%</span>
+    </div>`;
+  }).join('');
+
+  // 진단 축
+  const pos = x => (x + 1) / 2 * 100;
+  const known = axes.known || { w: true, v: true, c: true };
+  const axisDefs = [
+    { l: '쿨', r: '웜', val: axes.w, ok: known.w },
+    { l: '딥', r: '라이트', val: axes.v, ok: known.v },
+    { l: '부드러움', r: '선명', val: axes.c, ok: known.c },
+  ];
+  document.getElementById('axisBlock').innerHTML = axisDefs.map(ax => `
     <div class="axis-row">
-      <span style="width:40px;">쿨</span>
-      <div class="axis-track"><div class="axis-dot" style="left:calc(${clamp(warmPct)}% - 7px); background:${s.theme}"></div></div>
-      <span style="width:40px;text-align:right;">웜</span>
+      <span class="axis-end">${ax.l}</span>
+      <span class="axis-track">
+        <span class="axis-dot ${ax.ok ? '' : 'unknown'}" style="left:calc(${clampPct(pos(ax.ok ? ax.val : 0))}% - 8px);${ax.ok ? `background:${top.theme}` : ''}"></span>
+      </span>
+      <span class="axis-end r">${ax.r}</span>
     </div>
-    <div class="axis-row">
-      <span style="width:40px;">딥</span>
-      <div class="axis-track"><div class="axis-dot" style="left:calc(${clamp(lightPct)}% - 7px); background:${s.theme}"></div></div>
-      <span style="width:40px;text-align:right;">라이트</span>
-    </div>
-  `;
+  `).join('') + (known.c ? '' : '<div style="font-size:11.5px;color:var(--text3);text-align:center;margin-top:8px;">채도 축은 사진으로 판단할 수 없어요 (퀴즈 진단 필요)</div>');
 
-  document.getElementById('bestSwatches').innerHTML = renderSwatches(s.best);
-  document.getElementById('avoidSwatches').innerHTML = renderSwatches(s.avoid);
-  document.getElementById('infoNeutral').textContent = s.neutral;
-  document.getElementById('infoMetal').textContent = s.metal;
-  document.getElementById('infoMakeupLip').textContent = s.lip;
-  document.getElementById('infoMakeupEye').textContent = s.eye;
+  document.getElementById('resultDesc').textContent = top.desc;
+
+  // 경계·뉴트럴 안내
+  const notes = [];
+  if (conf.weak) {
+    notes.push(`중립 답변이 많아서 이 결과는 <b>참고 수준</b>이에요. 어느 축으로도 뚜렷하게 기울지 않아 특정 타입이라고 말하기 어려워요.`);
+  } else if (conf.level === '낮음') {
+    const second = SEASONS[ranked[1].key];
+    notes.push(`결과가 <b>${top.short}</b>과 <b>${second.short}</b> 사이에 걸쳐 있어요. 두 팔레트를 다 입어보고 얼굴이 더 화사해지는 쪽을 고르는 게 좋아요.`);
+  }
+  if (Math.abs(axes.w) < 0.15) {
+    notes.push('웜/쿨 어느 쪽으로도 강하게 기울지 않는 <b>뉴트럴</b> 성향이에요. 골드·실버 둘 다 무난하게 소화할 가능성이 높아요.');
+  }
+  if (source === 'quiz' && axes.neutralPicks >= 4) {
+    notes.push(`"잘 모르겠다"를 ${axes.neutralPicks}번 고르셨어요. 자연광 아래에서 실제로 옷을 얼굴에 대보고 다시 진단하면 훨씬 정확해져요.`);
+  }
+  const noteEl = document.getElementById('noteLine');
+  noteEl.innerHTML = notes.join('<br><br>');
+  noteEl.style.display = notes.length ? 'block' : 'none';
+
+  document.getElementById('bestSwatches').innerHTML = renderSwatches(top.best);
+  document.getElementById('avoidSwatches').innerHTML = renderSwatches(top.avoid);
+  document.getElementById('infoNeutral').textContent = top.neutral;
+  document.getElementById('infoMetal').textContent = top.metal;
+  document.getElementById('infoMakeupLip').textContent = top.lip;
+  document.getElementById('infoMakeupEye').textContent = top.eye;
+
+  document.getElementById('combineBtn').style.display = (quizAxes && photoAxes && source !== 'combined') ? 'inline-block' : 'none';
 
   switchTab('result');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-function clamp(v) { return Math.max(6, Math.min(94, v)); }
+function clampPct(v) { return Math.max(4, Math.min(96, v)); }
 
 function renderSwatches(list) {
   return list.map(c => `
-    <div class="swatch" onclick="copyHex(this, '${c.hex}')">
-      <div class="swatch-color" style="background:${c.hex}"></div>
-      <div class="swatch-hex">${c.label}</div>
-    </div>
+    <button class="swatch" onclick="copyHex(this, '${c.hex}')" title="${c.hex}">
+      <span class="swatch-color" style="background:${c.hex}"></span>
+      <span class="swatch-hex">${c.label}</span>
+    </button>
   `).join('');
 }
 
 function copyHex(el, hex) {
-  if (navigator.clipboard) {
-    navigator.clipboard.writeText(hex).catch(() => {});
-  }
+  if (navigator.clipboard) navigator.clipboard.writeText(hex).catch(() => {});
   el.classList.add('copied');
   setTimeout(() => el.classList.remove('copied'), 1200);
 }
 
-// ─── Tabs ────────────────────────────────────────
+// ─── 탭 ──────────────────────────────────────────
 function switchTab(tab) {
   document.querySelectorAll('.panel-section').forEach(p => p.classList.remove('active'));
   document.getElementById(`${tab}-panel`).classList.add('active');
@@ -557,6 +907,7 @@ function switchTab(tab) {
 
 // ─── Init ────────────────────────────────────────
 renderQuestion();
+renderPhotoState();
 </script>
 </body>
 </html>
