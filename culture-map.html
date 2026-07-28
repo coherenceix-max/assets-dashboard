@@ -389,6 +389,92 @@ const FACILITIES = [
     fee:'무료', parking:'있음', parkingFee:'무료 (약)',
     hours:'09:00–17:00 (약, 홈페이지 운영일정 확인 권장)',
     closedDay:'일요일·공휴일 및 별도 지정 휴관일 (약)', website:'https://www.gise.kr' },
+
+  // ── 어린이박물관 ────────────────────────────────
+  { id:23, name:'서울상상나라', category:'어린이박물관', area:'서울', region:'광진구',
+    address:'서울 광진구 능동로 216 (어린이대공원 내)', lat:37.5497, lng:127.0837,
+    fee:'4,000원 (36개월 미만 · 서울 두자녀 이상 무료)',
+    parking:'있음', parkingFee:'어린이대공원 주차장 5분당 150원 (약 1,800원/시간)',
+    hours:'10:00–18:00 (입장마감 17:00) · 회차제 10~17시 8회차, 회차당 100명',
+    closedDay:'월요일, 1월 1일', website:'https://www.seoulchildrensmuseum.org' },
+
+  { id:24, name:'국립중앙박물관 어린이박물관', category:'어린이박물관', area:'서울', region:'용산구',
+    address:'서울 용산구 서빙고로 137', lat:37.5240, lng:126.9803,
+    fee:'무료 (온라인 사전예약 필수 · 회차당 6명까지)',
+    parking:'있음', parkingFee:'2시간 2,000원 · 이후 30분당 500원 (1일 최대 10,000원)',
+    hours:'09:30–17:20 회차제 (약 5회차) · 예약은 방문 30일 전부터',
+    closedDay:'1월 1일, 설·추석 당일', website:'https://www.museum.go.kr/site/child/home' },
+
+  { id:25, name:'국립민속박물관 어린이박물관', category:'어린이박물관', area:'서울', region:'종로구',
+    address:'서울 종로구 삼청로 37 (경복궁 내)', lat:37.5814, lng:126.9791,
+    fee:'무료 (홈페이지 사전예약 · 1인 1일 1회)',
+    parking:'있음', parkingFee:'경복궁 주차장 2시간 3,000원 · 이후 10분당 300원 (1일 최대 18,000원)',
+    hours:'09:30–16:50 회차제 · 매일 09시 2주 내 예약 오픈',
+    closedDay:'1월 1일, 설·추석 당일', website:'https://www.nfm.go.kr/kids' },
+
+  { id:26, name:'헬로우뮤지움 어린이미술관', category:'어린이박물관', area:'서울', region:'성동구',
+    address:'서울 성동구 성수일로12길 20', lat:37.5437, lng:127.0562,
+    fee:'5,000원 (약, 전시별 상이)',
+    parking:'없음', parkingFee:'전용 주차장 없음 (장애인 전용만) · 인근 유료주차장 이용',
+    hours:'10:00–18:00 (입장마감 17:00)',
+    closedDay:'월·화·수요일 (약), 설·추석 당일', website:'https://hellomuseum.com' },
+
+  // ── 시립·국립박물관 (서울 특색) ──────────────────
+  { id:27, name:'서울공예박물관', category:'시립·국립박물관', area:'서울', region:'종로구',
+    address:'서울 종로구 율곡로3길 4', lat:37.5765, lng:126.9820,
+    fee:'무료 (어린이박물관동은 온라인 사전예약)',
+    parking:'없음', parkingFee:'일반 관람객 주차 불가 (장애인 차량 2시간) · 인근 유료주차장',
+    hours:'10:00–18:00 · 어린이박물관동 회차제 (평일 3회차 100분, 주말 4회차 90분)',
+    closedDay:'월요일, 1월 1일', website:'https://craftmuseum.seoul.go.kr' },
+
+  { id:28, name:'서울교육박물관', category:'시립·국립박물관', area:'서울', region:'종로구',
+    address:'서울 종로구 북촌로5길 48 (정독도서관 내)', lat:37.5822, lng:126.9832,
+    fee:'무료', parking:'있음', parkingFee:'정독도서관 주차장 5분당 250원 (1일 최대 30,000원)',
+    hours:'평일 09:00–18:00 / 주말 09:00–17:00',
+    closedDay:'매월 1·3주 수요일, 법정공휴일(일요일 제외)', website:'https://edumuseum.sen.go.kr' },
+
+  { id:29, name:'돈의문박물관마을', category:'시립·국립박물관', area:'서울', region:'종로구',
+    address:'서울 종로구 송월길 14-3', lat:37.5697, lng:126.9679,
+    fee:'무료 (일부 체험 프로그램 유료)',
+    parking:'없음', parkingFee:'마을 내 주차 불가 · 인근 서울역사박물관 주차장 이용 (약)',
+    hours:'10:00–19:00 (전시관 18:30 입장마감)',
+    closedDay:'월요일, 1월 1일', website:'https://dmvillage.info' },
+
+  // ── 미술관 (추가) ───────────────────────────────
+  { id:30, name:'예술의전당 한가람미술관', category:'미술관', area:'서울', region:'서초구',
+    address:'서울 서초구 남부순환로 2406', lat:37.4794, lng:127.0117,
+    fee:'전시별 상이 (약 10,000~25,000원)',
+    parking:'있음', parkingFee:'전시관객 3시간 4,000원 (토·일·공휴일 혼잡 시 할증)',
+    hours:'10:00–19:00 (전시별 상이) · ⚠️ 리모델링 휴관 중 (2025.10~2026.12 예정)',
+    closedDay:'월요일 (전시별 상이)', website:'https://www.sac.or.kr' },
+
+  { id:31, name:'세종문화회관 미술관', category:'미술관', area:'서울', region:'종로구',
+    address:'서울 종로구 세종대로 175', lat:37.5723, lng:126.9760,
+    fee:'전시별 상이 (성인 약 5,000~20,000원 · 어린이 약 2,000원~)',
+    parking:'있음', parkingFee:'세종로 공영주차장 5분당 430원 / 유료전시 관객 2시간권 4,000원',
+    hours:'10:00–19:00 (입장마감 18:30, 전시별 상이)',
+    closedDay:'전시 기간 중 무휴 (전시별 상이, 약)', website:'https://www.sejongpac.or.kr' },
+
+  { id:32, name:'뮤지엄한미 삼청', category:'미술관', area:'서울', region:'종로구',
+    address:'서울 종로구 삼청로9길 45', lat:37.5877, lng:126.9822,
+    fee:'성인 15,000원 (약, 전시별 상이 / 10인 이상 할인)',
+    parking:'협소', parkingFee:'관람객 무료 (18시까지, 공간 협소) 약',
+    hours:'10:00–18:00 (입장마감 17:00)',
+    closedDay:'월요일, 1월 1일, 설·추석 연휴, 성탄절', website:'https://museumhanmi.or.kr' },
+
+  { id:33, name:'아모레퍼시픽미술관', category:'미술관', area:'서울', region:'용산구',
+    address:'서울 용산구 한강대로 100 (본사 B1)', lat:37.5279, lng:126.9727,
+    fee:'성인 13,000원 / 학생 10,000원 / 어린이 6,500원',
+    parking:'있음', parkingFee:'관람객 90분 무료 (주차권 요청) · 이후 10분당 1,000원 (약)',
+    hours:'10:00–18:00 (입장마감 17:30)',
+    closedDay:'월요일, 1월 1일, 설·추석 연휴', website:'https://apma.amorepacific.com' },
+
+  { id:34, name:'디뮤지엄', category:'미술관', area:'서울', region:'성동구',
+    address:'서울 성동구 왕십리로 83-21 (서울숲 디타워 4~5F)', lat:37.5455, lng:127.0446,
+    fee:'전시별 상이 (성인 약 15,000~20,000원)',
+    parking:'있음', parkingFee:'서울숲 디타워 최초 30분 3,000원 · 이후 10분당 1,000원',
+    hours:'11:00–18:00 (전시별 상이, 입장마감 17:00)',
+    closedDay:'월요일 (전시별 상이)', website:'https://www.daelimmuseum.org/dmuseum' },
 ];
 // FACILITY_DATA_END
 
