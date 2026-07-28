@@ -75,6 +75,8 @@
 
   /* Map */
   #map { height: 560px; border-radius: 10px; border:1px solid var(--border); background:#1a1d2e; }
+  .map-fallback { height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px; color:var(--text2); font-size:14px; text-align:center; padding:20px; line-height:1.7; }
+  .map-fallback small { color:var(--text3); font-size:12px; }
   @media(max-width:960px){ #map { height:400px; } }
   .leaflet-popup-content-wrapper { background:var(--surface2); color:var(--text); border-radius:10px; border:1px solid var(--border); }
   .leaflet-popup-tip { background:var(--surface2); border:1px solid var(--border); }
@@ -475,6 +477,77 @@ const FACILITIES = [
     parking:'있음', parkingFee:'서울숲 디타워 최초 30분 3,000원 · 이후 10분당 1,000원',
     hours:'11:00–18:00 (전시별 상이, 입장마감 17:00)',
     closedDay:'월요일 (전시별 상이)', website:'https://www.daelimmuseum.org/dmuseum' },
+
+  // ── 국립·시립 박물관 (대표) ──────────────────────
+  { id:35, name:'국립중앙박물관', category:'시립·국립박물관', area:'서울', region:'용산구',
+    address:'서울 용산구 서빙고로 137', lat:37.5238, lng:126.9804,
+    fee:'무료 (상설전) / 특별전 별도',
+    parking:'있음', parkingFee:'최초 30분 900원 · 이후 10분당 300원 (1일 최대 18,000원)',
+    hours:'09:30–17:30 / 수·토 09:30–21:00',
+    closedDay:'1월 1일, 설·추석 당일, 3·6·9·12월 첫째 월요일', website:'https://www.museum.go.kr' },
+
+  { id:36, name:'국립민속박물관', category:'시립·국립박물관', area:'서울', region:'종로구',
+    address:'서울 종로구 삼청로 37 (경복궁 내)', lat:37.5817, lng:126.9793,
+    fee:'무료 (경복궁 입장권 없이 관람 가능)',
+    parking:'없음', parkingFee:'경복궁 주차장 이용 · 소형 2시간 3,000원 · 초과 10분당 800원',
+    hours:'3~10월 09:00–18:00 (토 ~20:00) / 11~2월 09:00–17:00',
+    closedDay:'1월 1일, 설·추석 당일', website:'https://www.nfm.go.kr' },
+
+  { id:37, name:'국립한글박물관', category:'시립·국립박물관', area:'서울', region:'용산구',
+    address:'서울 용산구 서빙고로 139', lat:37.5225, lng:126.9840,
+    fee:'무료 · ⚠️ 2025년 2월 화재로 휴관 중',
+    parking:'협소', parkingFee:'휴관 중 이용 불가',
+    hours:'⚠️ 휴관 중 (복구·증축 후 2028년 10월 재개관 예정)',
+    closedDay:'장기 휴관 중', website:'https://www.hangeul.go.kr' },
+
+  { id:38, name:'서울역사박물관', category:'시립·국립박물관', area:'서울', region:'종로구',
+    address:'서울 종로구 새문안로 55', lat:37.5704, lng:126.9697,
+    fee:'무료 (상설전) / 특별전 별도',
+    parking:'있음', parkingFee:'약 5분당 400원 (10분 이내 무료, 1일 최대 22,000원)',
+    hours:'09:00–18:00 (입장마감 17:30) / 금요일 21:00까지 연장',
+    closedDay:'월요일, 1월 1일', website:'https://museum.seoul.go.kr' },
+
+  { id:39, name:'국립고궁박물관', category:'시립·국립박물관', area:'서울', region:'종로구',
+    address:'서울 종로구 효자로 12', lat:37.5760, lng:126.9736,
+    fee:'무료',
+    parking:'없음', parkingFee:'경복궁 주차장 이용 · 소형 2시간 3,000원 · 초과 10분당 800원',
+    hours:'09:30–17:30 / 토·매월 마지막 수요일 09:30–21:00',
+    closedDay:'1월 1일, 설·추석 당일', website:'https://www.gogung.go.kr' },
+
+  { id:40, name:'대한민국역사박물관', category:'시립·국립박물관', area:'서울', region:'종로구',
+    address:'서울 종로구 세종대로 198', lat:37.5723, lng:126.9765,
+    fee:'무료',
+    parking:'협소', parkingFee:'일반 차량 주차 불가 (업무용 한정) · 인근 유료주차장 이용',
+    hours:'10:00–18:00 / 수·토 10:00–21:00 (입장마감 30분 전)',
+    closedDay:'1월 1일, 설·추석 당일', website:'https://www.much.go.kr' },
+
+  { id:41, name:'전쟁기념관', category:'시립·국립박물관', area:'서울', region:'용산구',
+    address:'서울 용산구 이태원로 29', lat:37.5366, lng:126.9772,
+    fee:'무료 (상설전) / 특별전·어린이박물관 별도',
+    parking:'있음', parkingFee:'30분 무료 · 2시간 4,000원 · 초과 30분당 1,500원 (1일 최대 30,000원)',
+    hours:'09:30–18:00 (입장마감 17:00)',
+    closedDay:'월요일, 1월 1일, 설·추석 당일', website:'https://www.warmemo.or.kr' },
+
+  { id:42, name:'인천광역시립박물관', category:'시립·국립박물관', area:'인천', region:'연수구',
+    address:'인천 연수구 청량로160번길 26', lat:37.4185, lng:126.6467,
+    fee:'무료 (상설전) / 기획전 별도',
+    parking:'있음', parkingFee:'무료 (약 34면)',
+    hours:'09:00–18:00 (입장마감 17:00)',
+    closedDay:'월요일, 1월 1일, 설·추석 당일', website:'https://www.incheon.go.kr/museum' },
+
+  { id:43, name:'국립현대미술관 서울관', category:'미술관', area:'서울', region:'종로구',
+    address:'서울 종로구 삼청로 30', lat:37.5787, lng:126.9800,
+    fee:'2,000원 (국제 기획전 8,000원) / 통합권 10,000원 · 24세 이하 무료',
+    parking:'있음', parkingFee:'최초 1시간 4,200원 · 초과 10분당 700원 (유료전시 관람 시 1시간 무료)',
+    hours:'10:00–18:00 / 수·토 10:00–21:00 (수·토 18~21시 무료관람)',
+    closedDay:'월요일, 1월 1일', website:'https://www.mmca.go.kr' },
+
+  { id:44, name:'국립현대미술관 덕수궁관', category:'미술관', area:'서울', region:'중구',
+    address:'서울 중구 세종대로 99 (덕수궁 내)', lat:37.5654, lng:126.9750,
+    fee:'2,000원 + 덕수궁 입장료 1,000원 별도',
+    parking:'없음', parkingFee:'전용 주차장 없음 · 인근 공영주차장 약 5분당 400원',
+    hours:'10:00–18:00 / 수·토 10:00–21:00 (수·토 18~21시 무료관람)',
+    closedDay:'월요일, 1월 1일', website:'https://www.mmca.go.kr' },
 ];
 // FACILITY_DATA_END
 
@@ -567,13 +640,23 @@ function getFiltered() {
 }
 
 // ─── 지도 ─────────────────────────────────────────
+// 지도 라이브러리를 못 불러와도 목록·비교표·필터는 계속 동작하도록 방어한다.
+let mapReady = false;
+
 function initMap() {
+  if (typeof L === 'undefined') {
+    document.getElementById('map').innerHTML =
+      '<div class="map-fallback">🗺️ 지도를 불러오지 못했습니다.<br>' +
+      '<small>네트워크 연결을 확인해 주세요. 아래 목록과 비교표는 정상적으로 이용할 수 있습니다.</small></div>';
+    return;
+  }
   map = L.map('map', { zoomControl: true }).setView([37.5400, 127.0000], 10);
   L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
     attribution: '&copy; OpenStreetMap &copy; CARTO',
     maxZoom: 19,
   }).addTo(map);
   markerLayer = L.layerGroup().addTo(map);
+  mapReady = true;
 }
 
 function makeIcon(cat) {
@@ -602,6 +685,7 @@ function popupHtml(f) {
 }
 
 function renderMarkers(list) {
+  if (!mapReady) return;
   markerLayer.clearLayers();
   for (const k in markerById) delete markerById[k];
   list.forEach(f => {
@@ -660,7 +744,7 @@ function selectFacility(id, panTo) {
   document.querySelectorAll('.fac-card').forEach(c => {
     c.classList.toggle('selected', +c.dataset.id === id);
   });
-  const m = markerById[id];
+  const m = mapReady ? markerById[id] : null;
   if (m) {
     if (panTo && f) map.flyTo([f.lat, f.lng], 14, { duration: 0.6 });
     m.openPopup();
