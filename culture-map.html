@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>수도권 문화시설 지도 — 박물관 · 미술관 · 과학관</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d2e;
+    --surface2: #242740;
+    --border: #2e3250;
+    --accent: #6c8ef5;
+    --accent2: #52d9a0;
+    --accent3: #f5a623;
+    --danger: #f56c6c;
+    --purple: #c084fc;
+    --cyan: #38bdf8;
+    --text: #e8eaf6;
+    --text2: #8890b5;
+    --text3: #5c6385;
+    --radius: 12px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif; min-height: 100vh; }
+  .page { max-width: 1240px; margin: 0 auto; padding: 28px 20px 60px; }
+
+  /* Header */
+  .header { margin-bottom: 22px; }
+  .header h1 { font-size: 22px; font-weight: 700; }
+  .header h1 span { color: var(--accent); }
+  .header p { color: var(--text2); font-size: 13px; margin-top: 5px; }
+  .badge { display: inline-block; background: var(--surface2); border: 1px solid var(--border); border-radius: 20px; padding: 3px 10px; font-size: 11px; color: var(--text2); margin-right: 6px; margin-top: 8px; }
+
+  /* Stat cards */
+  .cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
+  @media(max-width:720px){ .cards { grid-template-columns: repeat(2,1fr); } }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; }
+  .card-label { font-size: 11px; color: var(--text2); letter-spacing: 0.5px; margin-bottom: 6px; }
+  .card-value { font-size: 22px; font-weight: 700; }
+  .card-sub { font-size: 11px; color: var(--text3); margin-top: 3px; }
+  .c-accent { color: var(--accent); } .c-green { color: var(--accent2); }
+  .c-orange { color: var(--accent3); } .c-purple { color: var(--purple); }
+  .bd-accent { border-color: var(--accent); } .bd-green { border-color: var(--accent2); }
+  .bd-orange { border-color: var(--accent3); } .bd-purple { border-color: var(--purple); }
+
+  /* Filter bar */
+  .filters { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 18px; margin-bottom: 18px; }
+  .filter-row { display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:12px; }
+  .filter-row:last-child { margin-bottom:0; }
+  .filter-label { font-size:11px; color:var(--text3); width:64px; flex-shrink:0; letter-spacing:0.4px; }
+  .chips { display:flex; gap:6px; flex-wrap:wrap; }
+  .chip { padding:5px 13px; border-radius:20px; font-size:12px; cursor:pointer; border:1px solid var(--border); color:var(--text2); background:transparent; transition:all 0.18s; font-family:inherit; }
+  .chip:hover { border-color:var(--text2); }
+  .chip.active { color:#fff; font-weight:600; }
+  .chip[data-v="all"].active      { background:var(--accent);  border-color:var(--accent); }
+  .chip[data-v="어린이박물관"].active { background:var(--accent3); border-color:var(--accent3); color:#0f1117; }
+  .chip[data-v="시립·국립박물관"].active { background:var(--accent);  border-color:var(--accent); }
+  .chip[data-v="미술관"].active    { background:var(--purple);  border-color:var(--purple); }
+  .chip[data-v="과학관"].active    { background:var(--cyan);    border-color:var(--cyan); color:#0f1117; }
+  .chip.opt.active { background:var(--accent2); border-color:var(--accent2); color:#0f1117; }
+  .search-box { flex:1; min-width:180px; background:var(--surface2); border:1px solid var(--border); border-radius:8px; padding:7px 12px; color:var(--text); font-size:12px; outline:none; font-family:inherit; }
+  .search-box:focus { border-color:var(--accent); }
+  .search-box::placeholder { color:var(--text3); }
+
+  /* Layout */
+  .split { display:grid; grid-template-columns: 1.35fr 1fr; gap:16px; margin-bottom:20px; align-items:start; }
+  @media(max-width:960px){ .split { grid-template-columns:1fr; } }
+
+  .panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; }
+  .panel-title { font-size: 13px; font-weight: 600; color: var(--text2); margin-bottom: 12px; letter-spacing: 0.3px; display:flex; justify-content:space-between; align-items:center; }
+  .panel-title small { font-size:11px; color:var(--text3); font-weight:400; }
+
+  /* Map */
+  #map { height: 560px; border-radius: 10px; border:1px solid var(--border); background:#1a1d2e; }
+  @media(max-width:960px){ #map { height:400px; } }
+  .leaflet-popup-content-wrapper { background:var(--surface2); color:var(--text); border-radius:10px; border:1px solid var(--border); }
+  .leaflet-popup-tip { background:var(--surface2); border:1px solid var(--border); }
+  .leaflet-popup-content { margin:12px 14px; font-family:'Apple SD Gothic Neo','Noto Sans KR',sans-serif; }
+  .leaflet-container a.leaflet-popup-close-button { color:var(--text3); }
+  .pop-name { font-size:14px; font-weight:700; margin-bottom:3px; }
+  .pop-cat { font-size:10px; padding:2px 7px; border-radius:4px; display:inline-block; margin-bottom:7px; }
+  .pop-row { font-size:11.5px; color:var(--text2); line-height:1.65; }
+  .pop-row b { color:var(--text); font-weight:600; }
+  .pop-link { display:inline-block; margin-top:7px; font-size:11px; color:var(--accent); text-decoration:none; }
+
+  /* Marker pins */
+  .pin { width:22px; height:22px; border-radius:50% 50% 50% 0; transform:rotate(-45deg); border:2px solid rgba(255,255,255,0.85); box-shadow:0 2px 6px rgba(0,0,0,0.5); }
+  .pin span { transform:rotate(45deg); display:block; text-align:center; line-height:18px; font-size:11px; }
+
+  /* List */
+  .list-wrap { max-height:560px; overflow-y:auto; padding-right:4px; }
+  @media(max-width:960px){ .list-wrap { max-height:none; } }
+  .list-wrap::-webkit-scrollbar { width:6px; }
+  .list-wrap::-webkit-scrollbar-track { background:var(--surface2); border-radius:3px; }
+  .list-wrap::-webkit-scrollbar-thumb { background:var(--border); border-radius:3px; }
+  .list-wrap::-webkit-scrollbar-thumb:hover { background:var(--text3); }
+
+  .fac-card { background:var(--surface2); border:1px solid var(--border); border-radius:10px; padding:12px 14px; margin-bottom:9px; cursor:pointer; transition:border-color 0.18s, transform 0.18s; }
+  .fac-card:hover { border-color:var(--accent); transform:translateX(2px); }
+  .fac-card.selected { border-color:var(--accent2); box-shadow:0 0 0 1px var(--accent2); }
+  .fac-top { display:flex; align-items:center; gap:7px; margin-bottom:5px; flex-wrap:wrap; }
+  .fac-name { font-size:13px; font-weight:700; }
+  .fac-region { font-size:11px; color:var(--text3); margin-left:auto; }
+  .cat-badge { font-size:10px; padding:2px 7px; border-radius:4px; font-weight:600; white-space:nowrap; }
+  .cb-어린이박물관    { background:rgba(245,166,35,0.15);  color:var(--accent3); }
+  .cb-시립·국립박물관 { background:rgba(108,142,245,0.15); color:var(--accent); }
+  .cb-미술관         { background:rgba(192,132,252,0.15); color:var(--purple); }
+  .cb-과학관         { background:rgba(56,189,248,0.15);  color:var(--cyan); }
+
+  .fac-meta { display:grid; grid-template-columns:auto 1fr; gap:3px 8px; font-size:11.5px; line-height:1.55; margin-top:7px; }
+  .fac-meta dt { color:var(--text3); white-space:nowrap; }
+  .fac-meta dd { color:var(--text2); }
+  .free-tag { color:var(--accent2); font-weight:600; }
+  .paid-tag { color:var(--accent3); font-weight:600; }
+  .fac-tags { display:flex; gap:5px; flex-wrap:wrap; margin-top:8px; }
+  .ftag { font-size:10px; padding:2px 7px; border-radius:4px; }
+  .ft-free    { background:rgba(82,217,160,0.15);  color:var(--accent2); }
+  .ft-parkfree{ background:rgba(56,189,248,0.15);  color:var(--cyan); }
+  .ft-parkpaid{ background:rgba(245,166,35,0.15);  color:var(--accent3); }
+  .ft-nopark  { background:rgba(245,108,108,0.15); color:var(--danger); }
+  .fac-link { font-size:11px; color:var(--accent); text-decoration:none; }
+  .fac-link:hover { text-decoration:underline; }
+  .empty { color:var(--text3); font-size:13px; padding:30px; text-align:center; }
+
+  /* Table */
+  .full-panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px; margin-bottom:20px; }
+  table { width:100%; border-collapse:collapse; font-size:12px; }
+  th { text-align:left; padding:9px 10px; color:var(--text3); font-weight:600; font-size:11px; border-bottom:1px solid var(--border); white-space:nowrap; letter-spacing:0.3px; }
+  td { padding:10px; border-bottom:1px solid rgba(46,50,80,0.5); color:var(--text2); vertical-align:top; line-height:1.5; }
+  tbody tr:hover { background:rgba(108,142,245,0.05); }
+  td.tname { color:var(--text); font-weight:600; white-space:nowrap; }
+  .note { background:rgba(108,142,245,0.08); border:1px solid rgba(108,142,245,0.2); border-radius:8px; padding:12px 16px; font-size:12px; color:var(--text2); line-height:1.7; margin-top:14px; }
+  .note strong { color:var(--accent); }
+  .note a { color:var(--accent); }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="header">
+    <h1>🗺️ 수도권 문화시설 지도 <span>— 박물관 · 미술관 · 과학관</span></h1>
+    <p>서울 · 경기 · 인천의 어린이박물관, 시립/국립박물관, 미술관, 과학관 정보를 한눈에</p>
+    <span class="badge">💰 요금</span>
+    <span class="badge">🅿️ 주차 가능여부 · 주차비</span>
+    <span class="badge">⏰ 운영시간 · 휴관일</span>
+    <span class="badge" id="badge-updated">📅 2026년 7월 기준</span>
+  </div>
+
+  <div class="cards">
+    <div class="card bd-accent">
+      <div class="card-label">전체 시설</div>
+      <div class="card-value c-accent" id="c-total">—</div>
+      <div class="card-sub">서울 · 경기 · 인천</div>
+    </div>
+    <div class="card bd-green">
+      <div class="card-label">무료 입장</div>
+      <div class="card-value c-green" id="c-free">—</div>
+      <div class="card-sub">상설전 기준 무료</div>
+    </div>
+    <div class="card bd-orange">
+      <div class="card-label">주차 가능</div>
+      <div class="card-value c-orange" id="c-park">—</div>
+      <div class="card-sub">부설주차장 보유</div>
+    </div>
+    <div class="card bd-purple">
+      <div class="card-label">주차 무료</div>
+      <div class="card-value c-purple" id="c-parkfree">—</div>
+      <div class="card-sub">주차비 없음</div>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div class="filters">
+    <div class="filter-row">
+      <div class="filter-label">종류</div>
+      <div class="chips" id="cat-chips"></div>
+    </div>
+    <div class="filter-row">
+      <div class="filter-label">지역</div>
+      <div class="chips" id="area-chips"></div>
+    </div>
+    <div class="filter-row">
+      <div class="filter-label">조건</div>
+      <div class="chips">
+        <button class="chip opt" data-opt="free">💰 무료 입장</button>
+        <button class="chip opt" data-opt="parking">🅿️ 주차 가능</button>
+        <button class="chip opt" data-opt="parkfree">🆓 주차 무료</button>
+      </div>
+      <input type="text" class="search-box" id="search" placeholder="🔍 시설명 · 지역 검색">
+    </div>
+  </div>
+
+  <!-- Map + List -->
+  <div class="split">
+    <div class="panel">
+      <div class="panel-title">
+        <span>📍 지도</span>
+        <small>마커를 클릭하면 상세정보 · 목록과 연동됩니다</small>
+      </div>
+      <div id="map"></div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title">
+        <span>📋 시설 목록</span>
+        <small><span id="list-count">0</span>곳</small>
+      </div>
+      <div class="list-wrap" id="facList"></div>
+    </div>
+  </div>
+
+  <!-- Comparison table -->
+  <div class="full-panel">
+    <div class="panel-title">📊 요금 · 주차 · 운영시간 비교표</div>
+    <div style="overflow-x:auto;">
+      <table>
+        <thead>
+          <tr>
+            <th>시설명</th>
+            <th>종류</th>
+            <th>지역</th>
+            <th>입장료</th>
+            <th>주차</th>
+            <th>주차비</th>
+            <th>운영시간</th>
+            <th>휴관일</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+    </div>
+    <div class="note">
+      <strong>안내:</strong> 요금·주차비·운영시간은 2025~2026년 공개 정보를 기준으로 정리했으며, 기획전 유무나 계절(하절기/동절기)에 따라 달라질 수 있습니다.
+      특히 <strong>기획전 요금</strong>과 <strong>주차 요율</strong>은 변동이 잦으니 방문 전 각 시설 공식 홈페이지에서 최종 확인하시기 바랍니다.
+      일부 값은 <strong>약</strong>(추정)으로 표기되어 있습니다.
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ─── 시설 데이터 ──────────────────────────────────
+// FACILITY_DATA_START
+const FACILITIES = [
+  // ── 미술관 (서울) ──────────────────────────────
+  { id:1, name:'서울시립미술관 서소문 본관', category:'미술관', area:'서울', region:'중구',
+    address:'서울 중구 덕수궁길 61', lat:37.5647, lng:126.9750,
+    fee:'무료 (상설전) · 일부 기획전 유료', parking:'있음 (매우 협소)',
+    parkingFee:'유료 · 요일별 차량 5부제 운영', hours:'화~목 10:00–20:00 / 금 10:00–21:00 / 주말 10:00–19:00 (동절기 18:00)',
+    closedDay:'월요일, 1월 1일', website:'https://sema.seoul.go.kr/kr/visit/seosomun' },
+
+  { id:2, name:'서울시립 북서울미술관', category:'미술관', area:'서울', region:'노원구',
+    address:'서울 노원구 동일로 1238', lat:37.6524, lng:127.0715,
+    fee:'무료', parking:'있음', parkingFee:'약 5분당 250원',
+    hours:'화~목 10:00–20:00 / 금 10:00–21:00 / 주말 10:00–19:00 (동절기 18:00)',
+    closedDay:'월요일, 1월 1일', website:'https://sema.seoul.go.kr/kr/visit/bukseoul' },
+
+  { id:3, name:'서울시립 남서울미술관', category:'미술관', area:'서울', region:'관악구',
+    address:'서울 관악구 남부순환로 2076', lat:37.4727, lng:126.9776,
+    fee:'무료', parking:'협소 (사실상 어려움)', parkingFee:'인근 사당 공영주차장 이용 권장 (유료)',
+    hours:'화~금 10:00–20:00 / 주말·공휴일 10:00–18:00',
+    closedDay:'월요일, 1월 1일', website:'https://sema.seoul.go.kr/kr/visit/namseoul' },
+
+  { id:4, name:'서울시립 사진미술관', category:'미술관', area:'서울', region:'도봉구',
+    address:'서울 도봉구 마들로13길 68', lat:37.6533, lng:127.0473,
+    fee:'무료 (2025.5 개관)', parking:'있음 (건물 내 부설주차장)', parkingFee:'약 5분당 400원 · 경차/전기차 할인',
+    hours:'화~일 10:00–20:00', closedDay:'월요일', website:'https://sema.seoul.go.kr/kr/visit/photosema' },
+
+  { id:5, name:'리움미술관', category:'미술관', area:'서울', region:'용산구',
+    address:'서울 용산구 이태원로55길 60-16', lat:37.5384, lng:127.0035,
+    fee:'상설전 무료 (예약 필수) · 기획전 약 12,000~20,000원', parking:'있음 (매우 협소)',
+    parkingFee:'무료 (자리 협소, 대중교통 권장)', hours:'화~일 10:00–18:00',
+    closedDay:'월요일, 1월 1일, 설·추석 연휴', website:'https://www.leeumhoam.org/leeum/info/visit' },
+
+  { id:6, name:'대림미술관', category:'미술관', area:'서울', region:'종로구',
+    address:'서울 종로구 자하문로4길 21', lat:37.5794, lng:126.9723,
+    fee:'성인 6,000원 / 학생 3,000원 / 미취학 2,000원', parking:'협소 (사실상 어려움)',
+    parkingFee:'인근 유료주차장 이용 권장', hours:'화~일 10:00–18:00 (목·토 20:00까지, 확인 권장)',
+    closedDay:'월요일, 설·추석 연휴', website:'http://www.daelimmuseum.org' },
+
+  // ── 경기 · 인천 ────────────────────────────────
+  { id:7, name:'국립현대미술관 과천관', category:'미술관', area:'경기', region:'과천시',
+    address:'경기 과천시 광명로 313', lat:37.4278, lng:127.0097,
+    fee:'상설전 무료 · 기획전 약 8,000원', parking:'있음',
+    parkingFee:'약 2시간 3,000원 · 초과 30분당 1,000원 (1일 최대 약 13,000원)',
+    hours:'화~일 10:00–18:00 (매월 마지막 수요일 21:00까지 야간 무료개장)',
+    closedDay:'월요일, 1월 1일', website:'https://www.mmca.go.kr/visitingInfo/gwacheonInfo.do' },
+
+  { id:8, name:'경기도어린이박물관', category:'어린이박물관', area:'경기', region:'용인시',
+    address:'경기 용인시 기흥구 상갈로 6', lat:37.2750, lng:127.1155,
+    fee:'4,000원 (12개월 미만 무료) · 회차제 운영', parking:'있음',
+    parkingFee:'최초 1시간 1,000원 · 이후 10분당 200원 (30분 이내 무료)',
+    hours:'1회차 10:00–13:30 / 2회차 14:00–17:30 (사전예약 권장)',
+    closedDay:'월요일, 1월 1일, 설·추석 당일', website:'https://gcm.ggcf.kr/' },
+
+  { id:9, name:'경기도미술관', category:'미술관', area:'경기', region:'안산시',
+    address:'경기 안산시 단원구 동산로 268', lat:37.3120, lng:126.8310,
+    fee:'무료 (기획전은 전시별 상이)', parking:'있음', parkingFee:'무료 (화랑유원지 공영주차장)',
+    hours:'화~일 10:00–18:00 (입장마감 17:00)',
+    closedDay:'월요일, 1월 1일, 설·추석 당일', website:'https://gmoma.ggcf.kr/' },
+
+  { id:10, name:'경기도박물관', category:'시립·국립박물관', area:'경기', region:'용인시',
+    address:'경기 용인시 기흥구 상갈로 6', lat:37.2745, lng:127.1170,
+    fee:'무료', parking:'있음', parkingFee:'최초 1시간 1,000원 · 이후 10분당 200원',
+    hours:'10:00–18:00 (입장마감 17:20) · 7~8월 19:00까지',
+    closedDay:'월요일, 1월 1일, 설·추석 당일', website:'https://musenet.ggcf.kr/' },
+
+  { id:11, name:'인천어린이과학관', category:'과학관', area:'인천', region:'계양구',
+    address:'인천 계양구 방축로 21', lat:37.5470, lng:126.7350,
+    fee:'성인 4,000원 / 어린이·중고생 2,000원 · 만6세 이하 무료 (4D영상관 별도)',
+    parking:'있음', parkingFee:'소형 2,000원 / 대형 5,000원 (30분 이내 무료, 경차 50% 감면)',
+    hours:'09:00–17:50 (매표 17:00 마감) · 상설전시관 사전예약제',
+    closedDay:'월요일, 1월 1일, 설·추석 당일', website:'https://www.insiseol.or.kr/culture/icsmuseum/' },
+
+  { id:12, name:'미메시스 아트 뮤지엄', category:'미술관', area:'경기', region:'파주시',
+    address:'경기 파주시 문발로 253 (파주출판단지)', lat:37.7150, lng:126.7050,
+    fee:'성인 10,000원 / 중고생 8,000원 / 초등 5,000원 / 미취학 무료',
+    parking:'있음', parkingFee:'무료',
+    hours:'11~4월 10:00–18:00 / 5~10월 10:00–19:00',
+    closedDay:'월·화요일 (변동 가능, 방문 전 확인 권장)', website:'https://mimesisartmuseum.co.kr/' },
+];
+// FACILITY_DATA_END
+
+// ─── 상태 ─────────────────────────────────────────
+const state = { cat: 'all', area: 'all', opts: new Set(), q: '' };
+let map, markerLayer;
+const markerById = {};
+let selectedId = null;
+
+const CAT_COLOR = {
+  '어린이박물관': '#f5a623',
+  '시립·국립박물관': '#6c8ef5',
+  '미술관': '#c084fc',
+  '과학관': '#38bdf8',
+};
+const CAT_ICON = {
+  '어린이박물관': '🧸',
+  '시립·국립박물관': '🏛',
+  '미술관': '🎨',
+  '과학관': '🔬',
+};
+
+// ─── 판별 헬퍼 ────────────────────────────────────
+function isFree(f) {
+  return /^무료/.test((f.fee || '').trim());
+}
+function hasParking(f) {
+  const p = (f.parking || '').trim();
+  return p.startsWith('있음') || p.startsWith('yes');
+}
+function isParkingFree(f) {
+  if (!hasParking(f)) return false;
+  const pf = (f.parkingFee || '').trim();
+  return pf.startsWith('무료');
+}
+
+// ─── 필터 칩 생성 ──────────────────────────────────
+function buildChips() {
+  const cats = ['all', ...new Set(FACILITIES.map(f => f.category))];
+  document.getElementById('cat-chips').innerHTML = cats.map(c =>
+    `<button class="chip ${c === 'all' ? 'active' : ''}" data-k="cat" data-v="${c}">${
+      c === 'all' ? '전체' : (CAT_ICON[c] || '') + ' ' + c
+    }</button>`
+  ).join('');
+
+  const areas = ['all', ...new Set(FACILITIES.map(f => f.area))];
+  document.getElementById('area-chips').innerHTML = areas.map(a =>
+    `<button class="chip ${a === 'all' ? 'active' : ''}" data-k="area" data-v="${a}">${a === 'all' ? '전체' : a}</button>`
+  ).join('');
+
+  document.querySelectorAll('.chip[data-k]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const k = btn.dataset.k, v = btn.dataset.v;
+      state[k] = v;
+      document.querySelectorAll(`.chip[data-k="${k}"]`).forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      render();
+    });
+  });
+
+  document.querySelectorAll('.chip.opt').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const o = btn.dataset.opt;
+      if (state.opts.has(o)) { state.opts.delete(o); btn.classList.remove('active'); }
+      else { state.opts.add(o); btn.classList.add('active'); }
+      render();
+    });
+  });
+
+  document.getElementById('search').addEventListener('input', e => {
+    state.q = e.target.value.trim().toLowerCase();
+    render();
+  });
+}
+
+// ─── 필터링 ───────────────────────────────────────
+function getFiltered() {
+  return FACILITIES.filter(f => {
+    if (state.cat !== 'all' && f.category !== state.cat) return false;
+    if (state.area !== 'all' && f.area !== state.area) return false;
+    if (state.opts.has('free') && !isFree(f)) return false;
+    if (state.opts.has('parking') && !hasParking(f)) return false;
+    if (state.opts.has('parkfree') && !isParkingFree(f)) return false;
+    if (state.q) {
+      const hay = `${f.name} ${f.region} ${f.area} ${f.address} ${f.category}`.toLowerCase();
+      if (!hay.includes(state.q)) return false;
+    }
+    return true;
+  });
+}
+
+// ─── 지도 ─────────────────────────────────────────
+function initMap() {
+  map = L.map('map', { zoomControl: true }).setView([37.5400, 127.0000], 10);
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+    attribution: '&copy; OpenStreetMap &copy; CARTO',
+    maxZoom: 19,
+  }).addTo(map);
+  markerLayer = L.layerGroup().addTo(map);
+}
+
+function makeIcon(cat) {
+  const color = CAT_COLOR[cat] || '#8890b5';
+  return L.divIcon({
+    className: '',
+    html: `<div class="pin" style="background:${color}"><span>${CAT_ICON[cat] || '📍'}</span></div>`,
+    iconSize: [22, 22],
+    iconAnchor: [11, 22],
+    popupAnchor: [0, -22],
+  });
+}
+
+function popupHtml(f) {
+  const color = CAT_COLOR[f.category] || '#8890b5';
+  return `
+    <div class="pop-name">${f.name}</div>
+    <span class="pop-cat" style="background:${color}22;color:${color}">${f.category} · ${f.region}</span>
+    <div class="pop-row"><b>💰 요금</b> ${f.fee}</div>
+    <div class="pop-row"><b>🅿️ 주차</b> ${f.parking} / ${f.parkingFee}</div>
+    <div class="pop-row"><b>⏰ 시간</b> ${f.hours}</div>
+    <div class="pop-row"><b>🚫 휴관</b> ${f.closedDay}</div>
+    <div class="pop-row"><b>📍 주소</b> ${f.address}</div>
+    ${f.website ? `<a class="pop-link" href="${f.website}" target="_blank" rel="noopener">공식 홈페이지 →</a>` : ''}
+  `;
+}
+
+function renderMarkers(list) {
+  markerLayer.clearLayers();
+  for (const k in markerById) delete markerById[k];
+  list.forEach(f => {
+    if (typeof f.lat !== 'number' || typeof f.lng !== 'number') return;
+    const m = L.marker([f.lat, f.lng], { icon: makeIcon(f.category), title: f.name })
+      .bindPopup(popupHtml(f), { maxWidth: 300 })
+      .on('click', () => selectFacility(f.id, false));
+    m.addTo(markerLayer);
+    markerById[f.id] = m;
+  });
+}
+
+// ─── 목록 ─────────────────────────────────────────
+function facCardHtml(f) {
+  const tags = [];
+  if (isFree(f)) tags.push('<span class="ftag ft-free">무료 입장</span>');
+  if (!hasParking(f)) tags.push('<span class="ftag ft-nopark">주차 어려움</span>');
+  else if (isParkingFree(f)) tags.push('<span class="ftag ft-parkfree">주차 무료</span>');
+  else tags.push('<span class="ftag ft-parkpaid">주차 유료</span>');
+
+  return `<div class="fac-card ${selectedId === f.id ? 'selected' : ''}" data-id="${f.id}">
+    <div class="fac-top">
+      <span class="cat-badge cb-${f.category}">${CAT_ICON[f.category] || ''} ${f.category}</span>
+      <span class="fac-name">${f.name}</span>
+      <span class="fac-region">${f.region}</span>
+    </div>
+    <dl class="fac-meta">
+      <dt>💰 요금</dt><dd class="${isFree(f) ? 'free-tag' : 'paid-tag'}">${f.fee}</dd>
+      <dt>🅿️ 주차</dt><dd>${f.parking}${f.parkingFee ? ' · ' + f.parkingFee : ''}</dd>
+      <dt>⏰ 시간</dt><dd>${f.hours}</dd>
+      <dt>🚫 휴관</dt><dd>${f.closedDay}</dd>
+    </dl>
+    <div class="fac-tags">
+      ${tags.join('')}
+      ${f.website ? `<a class="fac-link" href="${f.website}" target="_blank" rel="noopener" onclick="event.stopPropagation()">홈페이지 →</a>` : ''}
+    </div>
+  </div>`;
+}
+
+function renderList(list) {
+  const el = document.getElementById('facList');
+  document.getElementById('list-count').textContent = list.length;
+  if (!list.length) {
+    el.innerHTML = '<div class="empty">조건에 맞는 시설이 없습니다.<br>필터를 조정해 보세요.</div>';
+    return;
+  }
+  el.innerHTML = list.map(facCardHtml).join('');
+  el.querySelectorAll('.fac-card').forEach(c => {
+    c.addEventListener('click', () => selectFacility(+c.dataset.id, true));
+  });
+}
+
+function selectFacility(id, panTo) {
+  selectedId = id;
+  const f = FACILITIES.find(x => x.id === id);
+  document.querySelectorAll('.fac-card').forEach(c => {
+    c.classList.toggle('selected', +c.dataset.id === id);
+  });
+  const m = markerById[id];
+  if (m) {
+    if (panTo && f) map.flyTo([f.lat, f.lng], 14, { duration: 0.6 });
+    m.openPopup();
+  }
+  const card = document.querySelector(`.fac-card[data-id="${id}"]`);
+  if (card && !panTo) card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+// ─── 표 ───────────────────────────────────────────
+function renderTable(list) {
+  const tb = document.getElementById('tableBody');
+  if (!list.length) {
+    tb.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--text3)">조건에 맞는 시설이 없습니다.</td></tr>';
+    return;
+  }
+  tb.innerHTML = list.map(f => `<tr>
+    <td class="tname">${f.name}</td>
+    <td><span class="cat-badge cb-${f.category}">${f.category}</span></td>
+    <td style="white-space:nowrap">${f.region}</td>
+    <td class="${isFree(f) ? 'free-tag' : ''}">${f.fee}</td>
+    <td style="white-space:nowrap">${f.parking}</td>
+    <td class="${isParkingFree(f) ? 'free-tag' : ''}">${f.parkingFee}</td>
+    <td>${f.hours}</td>
+    <td>${f.closedDay}</td>
+  </tr>`).join('');
+}
+
+// ─── 통계 ─────────────────────────────────────────
+function renderStats() {
+  document.getElementById('c-total').textContent = FACILITIES.length + '곳';
+  document.getElementById('c-free').textContent = FACILITIES.filter(isFree).length + '곳';
+  document.getElementById('c-park').textContent = FACILITIES.filter(hasParking).length + '곳';
+  document.getElementById('c-parkfree').textContent = FACILITIES.filter(isParkingFree).length + '곳';
+}
+
+// ─── 렌더 ─────────────────────────────────────────
+function render() {
+  const list = getFiltered();
+  renderMarkers(list);
+  renderList(list);
+  renderTable(list);
+}
+
+// ─── 초기화 ───────────────────────────────────────
+initMap();
+buildChips();
+renderStats();
+render();
+</script>
+</body>
+</html>
