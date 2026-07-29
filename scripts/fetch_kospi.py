@@ -19,6 +19,7 @@ import gzip
 import io
 import json
 import os
+import re
 import ssl
 import sys
 import time
@@ -49,10 +50,29 @@ BLD_PRICE = "dbms/MDC/STAT/standard/MDCSTAT01501"   # [12001] 전종목 시세
 BLD_VALUE = "dbms/MDC/STAT/standard/MDCSTAT03501"   # [12021] PER/PBR/배당수익률
 BLD_SECTOR = "dbms/MDC/STAT/standard/MDCSTAT03901"  # [12025] 업종분류 현황
 
+# 코스피200 현물 지수 후보 (KRX 화면 개편 대비해 순서대로 시도)
+BLD_INDEX_CANDIDATES = [
+    ("dbms/MDC/STAT/standard/MDCSTAT00101", {"idxIndMidclssCd": "02"}),
+    ("dbms/MDC/STAT/standard/MDCSTAT00201", {"idxIndMidclssCd": "02"}),
+]
+# 코스피200 선물 시세 후보 (prodId KRDRVFUK2I = 코스피200 선물)
+BLD_FUTURES_CANDIDATES = [
+    ("dbms/MDC/STAT/standard/MDCSTAT12501",
+     {"prodId": "KRDRVFUK2I", "mktTpCd": "T", "rghtTpCd": "T"}),
+    ("dbms/MDC/STAT/standard/MDCSTAT12502",
+     {"prodId": "KRDRVFUK2I", "mktTpCd": "T", "rghtTpCd": "T"}),
+]
+NAVER_KPI200 = "https://finance.naver.com/sise/sise_index.naver?code=KPI200"
+
 # 과거 밸류에이션 분포용 월말 스냅샷 최대 보관 개수 (약 4년)
 MAX_HISTORY = 48
 # history.json 이 비어 있을 때 한 번에 백필할 월 수
 BACKFILL_MONTHS = int(os.environ.get("KOSPI_BACKFILL_MONTHS", "36"))
+# 이론 베이시스 계산용 무위험수익률 (CD 91일 근사)
+RISK_FREE = float(os.environ.get("KOSPI_RISKFREE", "0.03"))
+# 베이시스 추이 보관 개수 (30분 주기 기준 약 1년)
+MAX_BASIS_POINTS = 3600
+BASIS_PATH = os.path.join(DATA_DIR, "basis.json")
 
 
 # ─── HTTP ────────────────────────────────────────────────────────────────
@@ -110,6 +130,16 @@ def krx(bld: str, retries: int = 3, **params: str) -> list[dict[str, Any]]:
                 return value
         return []
     raise RuntimeError(f"KRX 호출 실패 ({bld}): {last_err}")
+
+
+def _get(url: str, timeout: int = 20) -> str:
+    req = urllib.request.Request(url, headers={"User-Agent": UA, "Accept-Encoding": "gzip"})
+    with urllib.request.urlopen(req, timeout=timeout, context=ssl.create_default_context()) as resp:
+        raw = resp.read()
+        if resp.headers.get("Content-Encoding") == "gzip":
+            raw = gzip.GzipFile(fileobj=io.BytesIO(raw)).read()
+        charset = resp.headers.get_content_charset() or "euc-kr"
+    return raw.decode(charset, "replace")
 
 
 # ─── 파싱 헬퍼 ────────────────────────────────────────────────────────────
@@ -250,6 +280,148 @@ def percentile_stats(series: list[float], current: float) -> dict[str, float] | 
     }
 
 
+# ─── 베이시스 (콘탱고 / 백워데이션) ────────────────────────────────────────
+
+def second_thursday(year: int, month: int) -> date:
+    first = date(year, month, 1)
+    return first + timedelta(days=(3 - first.weekday()) % 7 + 7)
+
+
+def next_expiry(after: date) -> date:
+    """코스피200 선물 최근월물 만기일(3·6·9·12월 두 번째 목요일) 근사."""
+    for year in (after.year, after.year + 1):
+        for month in (3, 6, 9, 12):
+            exp = second_thursday(year, month)
+            if exp >= after:
+                return exp
+    return second_thursday(after.year + 1, 3)
+
+
+def fetch_spot(trd: str) -> float | None:
+    """코스피200 현물 지수."""
+    for bld, extra in BLD_INDEX_CANDIDATES:
+        try:
+            rows = krx(bld, retries=1, trdDd=trd, **extra)
+        except RuntimeError:
+            continue
+        for r in rows:
+            name = str(r.get("IDX_NM") or r.get("IDX_IND_NM") or "").replace(" ", "")
+            if name in ("코스피200", "KOSPI200"):
+                value = num(r.get("CLSPRC_IDX") or r.get("CLSPRC") or r.get("TDD_CLSPRC"))
+                if value:
+                    return value
+    # KRX 실패 시 네이버 폴백
+    try:
+        html = _get(NAVER_KPI200)
+        m = re.search(r'id="now_value"[^>]*>\s*([\d,.]+)', html)
+        if m:
+            return num(m.group(1))
+    except (urllib.error.URLError, TimeoutError, OSError) as e:
+        print(f"[basis] 현물 네이버 폴백 실패: {e}")
+    return None
+
+
+def fetch_futures(trd: str) -> tuple[float, str] | None:
+    """코스피200 선물 최근월물 (가격, 종목명)."""
+    ym_now = int(trd[:6])
+    for bld, extra in BLD_FUTURES_CANDIDATES:
+        try:
+            rows = krx(bld, retries=1, trdDd=trd, **extra)
+        except RuntimeError:
+            continue
+        best: tuple[int, float, str] | None = None
+        for r in rows:
+            name = str(r.get("ISU_NM") or r.get("ISU_ABBRV") or "").strip()
+            if not name or "-" in name or "스프레드" in name:
+                continue  # 스프레드 종목 제외
+            price = num(r.get("TDD_CLSPRC") or r.get("CLSPRC"))
+            if not price or price <= 0:
+                continue
+            m = re.search(r"(20\d{2})\s*[./-]?\s*(0[1-9]|1[0-2])", name)
+            ym = int(m.group(1) + m.group(2)) if m else ym_now
+            if ym < ym_now:
+                continue
+            if best is None or ym < best[0]:
+                best = (ym, price, name)
+        if best:
+            return best[1], best[2]
+    return None
+
+
+def build_basis(trd: str, div_yield: float | None) -> dict[str, Any] | None:
+    """시장 베이시스와 이론 베이시스를 계산한다.
+
+    시장 베이시스 = 선물 − 현물. 음수면 백워데이션(선물 저평가)으로,
+    매수차익잔고 청산에 따른 프로그램 매도 압력이 걸리는 국면이다.
+    """
+    spot = fetch_spot(trd)
+    fut = fetch_futures(trd)
+    if not spot:
+        print("[basis] 코스피200 현물 지수를 얻지 못했습니다.")
+        return None
+
+    trade_day = date.fromisoformat(f"{trd[:4]}-{trd[4:6]}-{trd[6:]}")
+    expiry = next_expiry(trade_day)
+    days = max((expiry - trade_day).days, 0)
+    d = (div_yield or 0) / 100
+    theo = spot * (RISK_FREE - d) * days / 365
+
+    out: dict[str, Any] = {
+        "spot": round(spot, 2),
+        "expiry": expiry.isoformat(),
+        "daysToExpiry": days,
+        "riskFree": RISK_FREE,
+        "divYield": round(d * 100, 2),
+        "theoBasis": round(theo, 2),
+    }
+    if fut:
+        price, name = fut
+        basis = price - spot
+        out.update({
+            "futures": round(price, 2),
+            "contract": name,
+            "basis": round(basis, 2),
+            "basisPct": round(basis / spot * 100, 3),
+            "gap": round(basis - theo, 2),           # 시장 − 이론 (괴리)
+            "state": "backwardation" if basis < 0 else "contango",
+        })
+        print(f"[basis] 현물 {spot:.2f} · 선물 {price:.2f} · 베이시스 {basis:+.2f} ({out['state']})")
+    else:
+        print(f"[basis] 현물 {spot:.2f} · 선물 데이터 없음")
+    return out
+
+
+def append_basis_history(point: dict[str, Any], stamp: str) -> None:
+    """베이시스 추이를 data/basis.json 에 누적한다."""
+    hist: dict[str, Any] = {"points": []}
+    if os.path.exists(BASIS_PATH):
+        try:
+            with open(BASIS_PATH, encoding="utf-8") as f:
+                loaded = json.load(f)
+            if isinstance(loaded.get("points"), list):
+                hist = loaded
+        except (json.JSONDecodeError, OSError) as e:
+            print(f"[warn] basis.json 을 읽지 못해 새로 만듭니다: {e}")
+
+    row = {
+        "t": stamp,
+        "spot": point.get("spot"),
+        "fut": point.get("futures"),
+        "basis": point.get("basis"),
+        "theo": point.get("theoBasis"),
+    }
+    points = hist["points"]
+    if points and points[-1].get("t") == stamp:
+        points[-1] = row
+    else:
+        points.append(row)
+    hist["points"] = points[-MAX_BASIS_POINTS:]
+
+    os.makedirs(DATA_DIR, exist_ok=True)
+    with open(BASIS_PATH, "w", encoding="utf-8") as f:
+        json.dump(hist, f, ensure_ascii=False, separators=(",", ":"))
+
+
 # ─── 메인 ────────────────────────────────────────────────────────────────
 
 def build() -> dict[str, Any]:
@@ -349,14 +521,26 @@ def build() -> dict[str, Any]:
     total_cap = sum(s["cap"] for s in stocks if not s.get("pref"))
     earnings = sum(s["cap"] / s["per"] for s in stocks if s["per"] and not s.get("pref"))
     equity = sum(s["cap"] / s["pbr"] for s in stocks if s["pbr"] and not s.get("pref"))
+    paying = [s for s in stocks if s["dvd"] and not s.get("pref")]
+    paying_cap = sum(s["cap"] for s in paying)
     market = {
         "count": len(stocks),
         "cap": total_cap,
         "per": round(total_cap / earnings, 2) if earnings else None,
         "pbr": round(total_cap / equity, 3) if equity else None,
+        "dvd": round(sum(s["cap"] * s["dvd"] for s in paying) / paying_cap, 2) if paying_cap else None,
         "advance": sum(1 for s in stocks if (s["chg"] or 0) > 0),
         "decline": sum(1 for s in stocks if (s["chg"] or 0) < 0),
     }
+
+    # 코스피200 선물 베이시스 (콘탱고 / 백워데이션)
+    try:
+        basis = build_basis(trd, market["dvd"])
+    except Exception as e:  # 베이시스 실패가 본 데이터 수집을 막지 않도록
+        print(f"[warn] 베이시스 계산 실패: {e}")
+        basis = None
+    if basis:
+        append_basis_history(basis, now.strftime("%Y-%m-%dT%H:%M"))
 
     save_history(history)
     return {
@@ -366,6 +550,7 @@ def build() -> dict[str, Any]:
         "delayNote": "장중 시세는 약 20분 지연",
         "historyDates": hist_dates,
         "market": market,
+        "basis": basis,
         "stocks": stocks,
     }
 

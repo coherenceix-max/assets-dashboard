@@ -116,6 +116,16 @@
   .spinner { width:22px; height:22px; border:2px solid var(--border); border-top-color: var(--accent); border-radius:50%; margin:0 auto 12px; animation: spin 0.8s linear infinite; }
   @keyframes spin { to { transform: rotate(360deg); } }
 
+  /* Basis */
+  .basis-grid { display:grid; grid-template-columns: 340px 1fr; gap:22px; align-items:center; }
+  @media(max-width:820px){ .basis-grid { grid-template-columns: 1fr; } }
+  .basis-state { font-size:24px; font-weight:700; display:flex; align-items:center; gap:8px; }
+  .basis-state small { font-size:12px; font-weight:500; color:var(--text3); }
+  .basis-desc { font-size:12px; color:var(--text2); line-height:1.7; margin-top:8px; }
+  .basis-metrics { display:grid; grid-template-columns:1fr 1fr; gap:12px 16px; margin-top:16px; }
+  .bm-l { font-size:11px; color:var(--text3); margin-bottom:2px; }
+  .bm-v { font-size:15px; font-weight:600; }
+
   /* Thermometer */
   .thermo { display:flex; height:14px; border-radius:7px; overflow:hidden; background: var(--surface2); margin: 4px 0 10px; }
   .thermo div { height:100%; }
@@ -159,6 +169,21 @@
       <div class="card-label">관심종목 알림</div>
       <div class="card-value c-orange" id="k-watch">—</div>
       <div class="card-sub" id="k-watch-sub">★ 표시 종목 중 저평가</div>
+    </div>
+  </div>
+
+  <!-- Basis (콘탱고 / 백워데이션) -->
+  <div class="full-panel" id="basis-panel" style="display:none;">
+    <div class="panel-title">📐 KOSPI200 베이시스 · 콘탱고 / 백워데이션</div>
+    <div class="basis-grid">
+      <div>
+        <div class="basis-state" id="basis-state">—</div>
+        <div class="basis-desc" id="basis-desc"></div>
+        <div class="basis-metrics" id="basis-metrics"></div>
+      </div>
+      <div class="chart-wrap" style="height:220px;">
+        <canvas id="basisChart"></canvas>
+      </div>
     </div>
   </div>
 
@@ -269,8 +294,11 @@
 
 <script>
 // ─── 설정 ─────────────────────────────────────────
-const RAW_URL = 'https://raw.githubusercontent.com/coherenceix-max/assets-dashboard/main/data/kospi.json';
+const RAW_BASE = 'https://raw.githubusercontent.com/coherenceix-max/assets-dashboard/main/data/';
+const RAW_URL = RAW_BASE + 'kospi.json';
 const LOCAL_URL = './data/kospi.json';
+const RAW_BASIS_URL = RAW_BASE + 'basis.json';
+const LOCAL_BASIS_URL = './data/basis.json';
 const REFRESH_MS = 30 * 60 * 1000;   // 30분
 const DEFAULTS = { r: 9, g: 2, cap: 3, roe: 3 };
 
@@ -540,7 +568,7 @@ function toggleWatch(code) {
 }
 
 // ─── 차트 ─────────────────────────────────────────
-let sectorChart, scatterChart;
+let sectorChart, scatterChart, basisChart;
 const GRID = 'rgba(46,50,80,0.6)';
 // CDN 이 막힌 환경에서도 표는 정상 동작하도록 차트는 선택적으로 다룬다
 const HAS_CHART = typeof Chart !== 'undefined';
@@ -563,6 +591,23 @@ function initCharts() {
       scales: {
         x: { grid: { color: GRID }, ticks: { callback: v => v + '%' } },
         y: { grid: { display: false } },
+      },
+    },
+  });
+
+  basisChart = new Chart(document.getElementById('basisChart'), {
+    type: 'line',
+    data: { labels: [], datasets: [] },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { display: true, labels: { boxWidth: 10, boxHeight: 10, usePointStyle: true } },
+        tooltip: { callbacks: { label: c => `${c.dataset.label} ${c.parsed.y >= 0 ? '+' : ''}${c.parsed.y.toFixed(2)}` } },
+      },
+      scales: {
+        x: { grid: { display: false }, ticks: { maxTicksLimit: 8, maxRotation: 0 } },
+        y: { grid: { color: GRID }, ticks: { callback: v => (v > 0 ? '+' : '') + v } },
       },
     },
   });
@@ -631,6 +676,69 @@ function renderScatter() {
   scatterChart.update();
 }
 
+// ─── 베이시스 (콘탱고 / 백워데이션) ──────────────────
+function renderBasis(b) {
+  const panel = document.getElementById('basis-panel');
+  if (!b || !b.spot) { panel.style.display = 'none'; return; }
+  panel.style.display = 'block';
+
+  const back = b.state === 'backwardation';
+  const stateEl = document.getElementById('basis-state');
+
+  if (b.futures == null) {
+    stateEl.innerHTML = `<span class="c-dim">선물 데이터 없음</span>`;
+    document.getElementById('basis-desc').textContent =
+      '코스피200 현물만 수집됐습니다. 선물 시세를 받지 못해 베이시스는 계산하지 않았습니다.';
+  } else {
+    stateEl.innerHTML = back
+      ? `<span class="c-red">백워데이션</span><small>선물 &lt; 현물</small>`
+      : `<span class="c-green">콘탱고</span><small>선물 &gt; 현물</small>`;
+    // 시장 베이시스가 이론 베이시스보다 낮으면 매도차익거래(프로그램 매도) 유인이 생긴다
+    const cheap = b.gap != null && b.gap < 0;
+    document.getElementById('basis-desc').innerHTML = (back
+      ? '선물이 현물보다 <b>싸게</b> 거래되는 국면입니다. 매수차익잔고 청산이 나오면 프로그램 매도로 이어져 지수가 눌리고, 그만큼 개별 종목의 적정가 대비 괴리가 벌어지기 쉽습니다.'
+      : '선물이 현물보다 <b>비싸게</b> 거래되는 정상 국면입니다. 매수차익거래 유입 여지가 있어 프로그램 매수 우위가 나타나기 쉽습니다.')
+      + (b.gap == null ? '' : `<br>시장 베이시스가 이론 베이시스보다 <b class="${cheap ? 'c-red' : 'c-green'}">${cheap ? '낮아' : '높아'}</b> ${cheap ? '매도차익거래(현물 매도·선물 매수)' : '매수차익거래(현물 매수·선물 매도)'} 유인이 있는 상태입니다.`);
+  }
+
+  const rows = [
+    ['코스피200 현물', b.spot.toFixed(2), ''],
+    ['최근월물 선물', b.futures != null ? b.futures.toFixed(2) : '—', ''],
+    ['시장 베이시스', b.basis != null ? (b.basis >= 0 ? '+' : '') + b.basis.toFixed(2) : '—',
+      b.basis == null ? '' : b.basis < 0 ? 'c-red' : 'c-green'],
+    ['이론 베이시스', (b.theoBasis >= 0 ? '+' : '') + b.theoBasis.toFixed(2), 'c-dim'],
+    ['괴리 (시장−이론)', b.gap != null ? (b.gap >= 0 ? '+' : '') + b.gap.toFixed(2) : '—',
+      b.gap == null ? '' : b.gap < 0 ? 'c-red' : 'c-green'],
+    ['만기', `D−${b.daysToExpiry} · ${b.expiry.slice(5)}`, 'c-dim'],
+  ];
+  document.getElementById('basis-metrics').innerHTML = rows.map(([l, v, c]) =>
+    `<div><div class="bm-l">${l}</div><div class="bm-v ${c}">${v}</div></div>`).join('');
+}
+
+async function loadBasisHistory() {
+  if (!HAS_CHART) return;
+  let doc = null;
+  for (const url of [RAW_BASIS_URL, LOCAL_BASIS_URL]) {
+    try { doc = await fetchJson(url); break; } catch (e) { /* 다음 후보 */ }
+  }
+  const pts = (doc && Array.isArray(doc.points) ? doc.points : []).filter(p => p.basis != null).slice(-120);
+  if (pts.length < 2) return;
+
+  basisChart.data.labels = pts.map(p => p.t.slice(5).replace('T', ' '));
+  basisChart.data.datasets = [
+    {
+      label: '시장 베이시스', data: pts.map(p => p.basis), borderColor: '#6c8ef5',
+      backgroundColor: 'rgba(108,142,245,0.12)', fill: true, tension: 0.25,
+      pointRadius: 0, borderWidth: 2,
+    },
+    {
+      label: '이론 베이시스', data: pts.map(p => p.theo), borderColor: 'rgba(136,144,181,0.8)',
+      borderDash: [4, 3], fill: false, tension: 0.25, pointRadius: 0, borderWidth: 1.5,
+    },
+  ];
+  basisChart.update();
+}
+
 // ─── 알림 ─────────────────────────────────────────
 function maybeNotify(hits) {
   if (!document.getElementById('f-notify').checked) return;
@@ -685,6 +793,8 @@ async function load() {
 
   nextAt = Date.now() + REFRESH_MS;
   render();
+  renderBasis(doc.basis);
+  loadBasisHistory();
 }
 
 function tick() {
