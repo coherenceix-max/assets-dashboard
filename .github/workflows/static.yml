@@ -6,6 +6,12 @@ on:
   push:
     branches: ["main"]
 
+  # KOSPI 데이터가 갱신되면 Pages 사본도 함께 최신화
+  # (GITHUB_TOKEN 으로 만든 커밋은 push 이벤트를 발생시키지 않으므로 필요)
+  workflow_run:
+    workflows: ["KOSPI 페어밸류 데이터 수집"]
+    types: [completed]
+
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
