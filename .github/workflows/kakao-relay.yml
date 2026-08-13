@@ -1,0 +1,65 @@
+name: 카카오톡 민간임대 소식 중계
+
+# 안드로이드 알림 리스너 자동화 앱(MacroDroid / Tasker / Automate)이
+# 지정한 오픈채팅방의 알림을 잡아 아래 형태로 POST 하면 실행된다.
+#
+#   POST https://api.github.com/repos/<owner>/<repo>/dispatches
+#   Authorization: Bearer <fine-grained PAT, contents:write>
+#   {"event_type":"kakao-message",
+#    "client_payload":{"room":"방이름","sender":"보낸이","message":"본문","timestamp":"2026-08-13 21:05"}}
+
+on:
+  repository_dispatch:
+    types: [kakao-message]
+  workflow_dispatch:
+    inputs:
+      payload:
+        description: '테스트용 JSON (예: {"room":"테스트","sender":"나","message":"동탄 민간임대 분양 시작 https://ex.com"})'
+        required: true
+
+permissions:
+  contents: write
+
+concurrency:
+  group: kakao-relay
+  cancel-in-progress: false
+
+jobs:
+  relay:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: 메시지 필터링 및 텔레그램 전달
+        working-directory: scripts
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          # 감시할 오픈채팅방 이름(부분 일치, 쉼표로 여러 개). 비우면 모든 방 허용.
+          KAKAO_ROOMS: ${{ vars.KAKAO_ROOMS }}
+          # 'true' 로 두면 서울/경기 지역 키워드가 있어야만 전달한다.
+          KAKAO_REQUIRE_REGION: ${{ vars.KAKAO_REQUIRE_REGION }}
+          # 'true' 로 두면 분양/모집 키워드가 있어야만 전달한다.
+          KAKAO_REQUIRE_LAUNCH: ${{ vars.KAKAO_REQUIRE_LAUNCH }}
+          KAKAO_PAYLOAD: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.payload || toJSON(github.event.client_payload) }}
+        run: python3 relay_kakao_message.py
+
+      - name: 발송 이력 커밋
+        run: |
+          if [ -z "$(git status --porcelain data/sent_state.json)" ]; then
+            echo "변경 없음"
+            exit 0
+          fi
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/sent_state.json
+          git commit -m "chore: 카카오 중계 발송 이력 갱신 [skip ci]"
+          for i in 1 2 3 4; do
+            git pull --rebase origin "${GITHUB_REF_NAME}" && git push origin "HEAD:${GITHUB_REF_NAME}" && exit 0
+            sleep $((2 ** i))
+          done
+          echo "::warning::발송 이력 커밋 실패 (알림 자체는 정상 발송됨)"

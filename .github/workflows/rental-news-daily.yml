@@ -1,0 +1,63 @@
+name: 민간임대 분양 뉴스 (매일 자정)
+
+on:
+  schedule:
+    # 15:00 UTC == 00:00 KST (한국 표준시는 서머타임이 없어 고정)
+    - cron: "0 15 * * *"
+  workflow_dispatch:
+    inputs:
+      window_hours:
+        description: "조회 기간(시간)"
+        required: false
+        default: "26"
+      dry_run:
+        description: "발송하지 않고 결과만 확인"
+        type: boolean
+        required: false
+        default: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: rental-news
+  cancel-in-progress: false
+
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: 기사 수집 및 텔레그램 발송
+        working-directory: scripts
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          NAVER_CLIENT_ID: ${{ secrets.NAVER_CLIENT_ID }}
+          NAVER_CLIENT_SECRET: ${{ secrets.NAVER_CLIENT_SECRET }}
+          WINDOW_HOURS: ${{ github.event.inputs.window_hours || '26' }}
+        run: |
+          python3 collect_rental_news.py \
+            ${{ github.event.inputs.dry_run == 'true' && '--dry-run' || '' }}
+
+      - name: 발송 이력 커밋
+        if: github.event.inputs.dry_run != 'true'
+        run: |
+          if [ -z "$(git status --porcelain data/sent_state.json)" ]; then
+            echo "변경 없음"
+            exit 0
+          fi
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/sent_state.json
+          git commit -m "chore: 민간임대 뉴스 발송 이력 갱신 [skip ci]"
+          for i in 1 2 3 4; do
+            git pull --rebase origin "${GITHUB_REF_NAME}" && git push origin "HEAD:${GITHUB_REF_NAME}" && exit 0
+            sleep $((2 ** i))
+          done
+          echo "::warning::발송 이력 커밋 실패 (알림 자체는 정상 발송됨)"
