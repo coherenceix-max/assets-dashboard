@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
-"""매일 자정(KST) 실행 — 서울/경기 '민간임대' 분양 시작 기사를 모아 텔레그램으로 보낸다.
+"""매일 자정(KST) 실행 — 서울/경기 분양 기사를 모아 텔레그램으로 보낸다.
+
+수집 주제
+  · 민간임대       — 민간임대/공공지원민간임대 분양·임차인 모집
+  · 무순위/로또청약 — 무순위·줍줍·계약취소주택·잔여세대 청약
 
 사용 소스
   1) 네이버 뉴스 검색 API  (NAVER_CLIENT_ID / NAVER_CLIENT_SECRET 있을 때, 원문 링크 제공)
@@ -24,24 +28,33 @@ from email.utils import parsedate_to_datetime
 
 from rental_common import (
     KST,
+    TOPICS,
     already_sent,
     escape_html,
     http_get,
     load_state,
     log,
     mark_sent,
-    match_rental_launch,
+    match_article,
     save_state,
     send_telegram,
 )
 
 # 검색어 — 소스별로 그대로 사용한다.
 QUERIES = [
+    # 민간임대
     "민간임대 분양",
     "공공지원 민간임대 입주자 모집",
     "민간임대 아파트 청약",
     "민간임대 임차인 모집공고",
+    # 무순위/로또 청약
+    "무순위 청약",
+    "로또 청약 아파트",
+    "아파트 줍줍 무순위 접수",
+    "계약취소주택 무순위 공급",
 ]
+
+TOPIC_ICONS = {"민간임대": "🏢", "무순위/로또청약": "🎰"}
 
 DEFAULT_WINDOW_HOURS = 26  # 크론 지연/중복 대비 여유분 (중복은 상태 파일이 걸러낸다)
 
@@ -169,12 +182,17 @@ def collect(window_hours: int) -> list[dict]:
             continue
 
         blob = f"{item['title']} {item['summary']}"
-        verdict = match_rental_launch(blob)
+        verdict = match_article(blob)
         if verdict is None:
             continue
 
         key = normalize_key(item["link"], item["title"])
-        item = {**item, "region": verdict["region"], "key": key}
+        item = {
+            **item,
+            "region": verdict["region"],
+            "topics": verdict["topics"],
+            "key": key,
+        }
 
         # 같은 기사면 네이버(원문 링크)를 우선한다.
         existing = matched.get(key)
@@ -184,7 +202,7 @@ def collect(window_hours: int) -> list[dict]:
             matched[key] = item
 
     results = sorted(matched.values(), key=lambda x: x["published"], reverse=True)
-    log(f"조건 통과(민간임대 + 분양시작 + 서울/경기): {len(results)}건")
+    log(f"조건 통과(관심주제 + 분양시작 + 서울/경기): {len(results)}건")
     return results
 
 
@@ -192,18 +210,30 @@ def build_message(items: list[dict], window_hours: int) -> str:
     now = datetime.now(KST)
     since = now - timedelta(hours=window_hours)
 
-    header = (
-        f"🏢 <b>민간임대 분양 소식</b> (서울·경기)\n"
-        f"<i>{since:%m/%d %H:%M} ~ {now:%m/%d %H:%M} KST · {len(items)}건</i>\n"
-    )
+    lines = [
+        "📢 <b>서울·경기 분양 소식</b>",
+        f"<i>{since:%m/%d %H:%M} ~ {now:%m/%d %H:%M} KST · 총 {len(items)}건</i>",
+    ]
 
-    lines = [header]
-    for idx, item in enumerate(items, start=1):
-        lines.append(
-            f"\n<b>{idx}. [{item['region']}]</b> {escape_html(item['title'])}\n"
-            f"　{escape_html(item['source'])} · {item['published']:%m/%d %H:%M}\n"
-            f"　🔗 {escape_html(item['link'])}"
-        )
+    # 주제가 둘 다 걸린 기사는 먼저 나오는 주제 한 곳에만 넣어 중복을 피한다.
+    placed: set[str] = set()
+    for topic in TOPICS:
+        bucket = [
+            item
+            for item in items
+            if topic in item["topics"] and item["key"] not in placed
+        ]
+        if not bucket:
+            continue
+        placed.update(item["key"] for item in bucket)
+
+        lines.append(f"\n{TOPIC_ICONS.get(topic, '•')} <b>{topic}</b> ({len(bucket)}건)")
+        for idx, item in enumerate(bucket, start=1):
+            lines.append(
+                f"\n<b>{idx}. [{item['region']}]</b> {escape_html(item['title'])}\n"
+                f"　{escape_html(item['source'])} · {item['published']:%m/%d %H:%M}\n"
+                f"　🔗 {escape_html(item['link'])}"
+            )
     return "\n".join(lines)
 
 
@@ -231,14 +261,15 @@ def main() -> int:
 
     if args.dry_run:
         for item in fresh:
-            print(f"[{item['region']}] {item['title']}\n  {item['link']}\n")
+            topics = "/".join(item["topics"])
+            print(f"[{topics}][{item['region']}] {item['title']}\n  {item['link']}\n")
         print(f"총 {len(fresh)}건 (dry-run, 발송 안 함)")
         return 0
 
     if not fresh:
         if args.notify_empty:
             send_telegram(
-                f"🏢 <b>민간임대 분양 소식</b> (서울·경기)\n"
+                f"📢 <b>서울·경기 분양 소식</b>\n"
                 f"<i>{datetime.now(KST):%m/%d}</i> — 새 소식 없음"
             )
         log("발송할 신규 기사 없음")

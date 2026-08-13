@@ -27,7 +27,9 @@ USER_AGENT = (
 # 키워드 사전
 # ---------------------------------------------------------------------------
 
-# 1) '민간임대' 상품군 — 하나라도 걸려야 한다.
+# 1) 관심 주제 — 주제별 키워드 중 하나라도 걸려야 한다.
+#    주제는 서로 다른 상품이므로 병렬로 판정하고, 알림에 주제를 표시한다.
+
 RENTAL_KEYWORDS = [
     "민간임대",
     "민간 임대",
@@ -39,15 +41,33 @@ RENTAL_KEYWORDS = [
     "임대 후 분양",
 ]
 
+# 무순위 청약(줍줍) — 미계약·계약취소 물량을 무작위 추첨으로 푸는 건이라
+# 민간임대와는 별개 상품이다.
+UNSOLD_KEYWORDS = [
+    "무순위",
+    "로또 청약",
+    "로또청약",
+    "줍줍",
+    "잔여세대",
+    "잔여 세대",
+    "미계약분",
+    "미계약 물량",
+    "계약취소주택",
+    "계약취소 주택",
+    "임의공급",
+    "임의 공급",
+]
+
+TOPICS: dict[str, list[str]] = {
+    "민간임대": RENTAL_KEYWORDS,
+    "무순위/로또청약": UNSOLD_KEYWORDS,
+}
+
 # 2) '분양/모집 시작' 신호 — 하나라도 걸려야 한다.
 LAUNCH_KEYWORDS = [
     "분양",
     "청약",
-    "입주자 모집",
-    "입주자모집",
-    "모집공고",
-    "임차인 모집",
-    "임차인모집",
+    "모집",  # 입주자 모집 / 임차인 모집 / 모집공고 / 추가 모집 을 모두 포함
     "선착순",
     "정당계약",
     "견본주택",
@@ -57,6 +77,9 @@ LAUNCH_KEYWORDS = [
     "공급 시작",
     "예약 접수",
     "사전예약",
+    "접수",
+    "공급",
+    "추첨",
 ]
 
 # 3) 서울/경기 지역 신호
@@ -115,12 +138,21 @@ def classify_region(text: str) -> str | None:
     return None
 
 
-def match_rental_launch(text: str) -> dict | None:
-    """민간임대 + 분양시작 + 서울/경기 조건을 모두 만족하면 매칭 정보를 돌려준다."""
+def match_topics(text: str) -> dict[str, list[str]]:
+    """텍스트에 걸린 주제와 그 근거 키워드를 돌려준다."""
+    return {
+        topic: hits
+        for topic, keywords in TOPICS.items()
+        if (hits := _contains_any(text, keywords))
+    }
+
+
+def match_article(text: str) -> dict | None:
+    """관심 주제 + 분양시작 + 서울/경기 조건을 모두 만족하면 매칭 정보를 돌려준다."""
     normalized = re.sub(r"\s+", " ", text)
 
-    rental_hits = _contains_any(normalized, RENTAL_KEYWORDS)
-    if not rental_hits:
+    topic_hits = match_topics(normalized)
+    if not topic_hits:
         return None
 
     launch_hits = _contains_any(normalized, LAUNCH_KEYWORDS)
@@ -141,7 +173,8 @@ def match_rental_launch(text: str) -> dict | None:
 
     return {
         "region": region,
-        "rental_hits": rental_hits[:3],
+        "topics": list(topic_hits),
+        "topic_hits": {t: h[:3] for t, h in topic_hits.items()},
         "launch_hits": launch_hits[:3],
     }
 

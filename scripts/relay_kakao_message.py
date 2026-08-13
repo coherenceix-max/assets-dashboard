@@ -22,12 +22,13 @@ from datetime import datetime
 from rental_common import (
     KST,
     LAUNCH_KEYWORDS,
-    RENTAL_KEYWORDS,
+    TOPICS,
     already_sent,
     classify_region,
     escape_html,
     load_state,
     log,
+    match_topics,
     mark_sent,
     save_state,
     send_telegram,
@@ -62,16 +63,31 @@ def _flag(name: str) -> bool:
     return os.environ.get(name, "").strip().lower() in ("1", "true", "yes")
 
 
+def wanted_topics() -> list[str]:
+    """감시할 주제. KAKAO_TOPICS 로 조절하며 기본은 '민간임대' 만이다.
+
+    두 주제를 다 받으려면 KAKAO_TOPICS 에 `민간임대,무순위/로또청약` 또는 `all` 을 넣는다.
+    """
+    raw = os.environ.get("KAKAO_TOPICS", "").strip()
+    if not raw:
+        return ["민간임대"]
+    if raw.lower() == "all":
+        return list(TOPICS)
+    picked = [t.strip() for t in raw.split(",") if t.strip() in TOPICS]
+    return picked or ["민간임대"]
+
+
 def matches(message: str) -> tuple[dict | None, str]:
-    """채팅 메시지는 기사보다 짧으므로 '민간임대' 키워드만 필수로 본다.
+    """채팅 메시지는 기사보다 짧으므로 주제 키워드만 필수로 본다.
 
     반환값은 (판정결과, 사유). 판정결과가 None 이면 사유가 제외 이유다.
     """
     normalized = re.sub(r"\s+", " ", message)
 
-    rental_hits = [kw for kw in RENTAL_KEYWORDS if kw in normalized]
-    if not rental_hits:
-        return None, "민간임대 키워드 없음"
+    topics = wanted_topics()
+    hit_topics = [t for t in match_topics(normalized) if t in topics]
+    if not hit_topics:
+        return None, f"주제 키워드 없음 (감시 주제: {', '.join(topics)})"
 
     region = classify_region(normalized)
     if region is None and _flag("KAKAO_REQUIRE_REGION"):
@@ -84,6 +100,7 @@ def matches(message: str) -> tuple[dict | None, str]:
     return (
         {
             "region": region,
+            "topics": hit_topics,
             "launch_hits": launch_hits[:3],
             "links": URL_PATTERN.findall(normalized)[:5],
         },
@@ -97,14 +114,14 @@ def build_message(payload: dict, verdict: dict) -> str:
     body = payload.get("message") or ""
     stamp = payload.get("timestamp") or f"{datetime.now(KST):%Y-%m-%d %H:%M}"
 
-    tags = []
+    tags = list(verdict["topics"])
     if verdict["region"]:
         tags.append(verdict["region"])
     tags.extend(verdict["launch_hits"])
     tag_line = " · ".join(dict.fromkeys(tags))
 
     lines = [
-        "💬 <b>카카오톡 민간임대 소식</b>",
+        "💬 <b>카카오톡 분양 소식</b>",
         f"<i>{escape_html(room)} · {escape_html(sender)} · {escape_html(stamp)}</i>",
     ]
     if tag_line:

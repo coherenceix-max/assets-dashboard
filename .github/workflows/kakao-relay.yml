@@ -45,6 +45,8 @@ jobs:
           KAKAO_REQUIRE_REGION: ${{ vars.KAKAO_REQUIRE_REGION }}
           # 'true' 로 두면 분양/모집 키워드가 있어야만 전달한다.
           KAKAO_REQUIRE_LAUNCH: ${{ vars.KAKAO_REQUIRE_LAUNCH }}
+          # 감시 주제. 비우면 '민간임대' 만. 무순위까지 받으려면 'all'
+          KAKAO_TOPICS: ${{ vars.KAKAO_TOPICS }}
           KAKAO_PAYLOAD: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.payload || toJSON(github.event.client_payload) }}
         run: python3 relay_kakao_message.py
 
