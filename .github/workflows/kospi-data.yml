@@ -1,0 +1,50 @@
+name: KOSPI 페어밸류 데이터 수집
+
+on:
+  schedule:
+    # 30분마다 — UTC 00:00~07:30 = KST 09:00~16:30 (평일 장중)
+    - cron: "0,30 0-7 * * 1-5"
+    # KST 18:00 — 장 마감 확정치 한 번 더
+    - cron: "0 9 * * 1-5"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: kospi-data
+  cancel-in-progress: false
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: KRX 데이터 수집
+        run: python scripts/fetch_kospi.py
+
+      - name: 결과 커밋 & 푸시
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/
+          if git diff --staged --quiet; then
+            echo "변경 없음 — 커밋 생략"
+            exit 0
+          fi
+          git commit -m "chore(data): KOSPI 페어밸류 스냅샷 $(TZ=Asia/Seoul date '+%Y-%m-%d %H:%M KST')"
+          for delay in 0 2 4 8 16; do
+            [ "$delay" -gt 0 ] && sleep "$delay"
+            git pull --rebase --autostash origin "${GITHUB_REF_NAME}" || true
+            if git push origin "HEAD:${GITHUB_REF_NAME}"; then
+              echo "푸시 완료"
+              exit 0
+            fi
+            echo "푸시 실패 — 재시도"
+          done
+          exit 1
